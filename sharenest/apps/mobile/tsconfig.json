@@ -1,0 +1,18 @@
+{
+  "extends": "@sharenest/config/tsconfig/react-native.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+    // "strict": true // より厳格な型チェックを行う場合は有効化
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "App.tsx",
+    "index.js", // main エントリーポイント
+    "*.js" // babel.config.js など
+  ],
+  "exclude": ["node_modules", "babel.config.js"]
+} 

@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* カスタムグラデーションとアニメーション */
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(37, 99, 235, 0.6); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ガラスモーフィズム */
+.glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 3Dカードエフェクト */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.card-3d:hover {
+  transform: rotateY(5deg) rotateX(5deg) scale(1.05);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+}
+
+/* グラデーションテキスト */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-blue {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 視認性を高める暖色グラデーション（青系背景上でのコントラスト用） */
+.gradient-text-warm {
+  background: linear-gradient(135deg, #f59e0b 0%, #f43f5e 50%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 強めのテキストグローでアウトライン効果を付与 */
+.text-glow-strong {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 20px rgba(14, 165, 233, 0.45);
+}
+
+/* 近未来の青系ネオン調 */
+.gradient-text-cyber {
+  background: linear-gradient(135deg, #22d3ee 0%, #60a5fa 45%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-glow-cool {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6), 0 0 18px rgba(56, 189, 248, 0.45), 0 0 36px rgba(124, 58, 237, 0.35);
+}
+
+/* 動的背景 */
+.animated-bg {
+  background: linear-gradient(-45deg, #1e40af, #3b82f6, #06b6d4, #0ea5e9);
+  background-size: 400% 400%;
+  animation: gradient-x 15s ease infinite;
+}
+
+/* ネオモーフィズム */
+.neomorphism {
+  background: #f0f4f8;
+  border-radius: 20px;
+  box-shadow: 20px 20px 60px #d0d7de, -20px -20px 60px #ffffff;
+}
+
+.neomorphism-inset {
+  background: #f0f4f8;
+  border-radius: 20px;
+  box-shadow: inset 20px 20px 60px #d0d7de, inset -20px -20px 60px #ffffff;
+}
+
+/* カスタムスクロールバー */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* モバイル最適化 */
+@media (max-width: 768px) {
+  .card-3d:hover {
+    transform: scale(1.02);
+  }
+}
+
+body {
+  /* 必要に応じて基本的なbodyスタイルを追加 */
+  /*例: font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;*/
+}
+
+/* 多言語切り替えボタンが常に表示されるように、必要に応じてスタイル調整 */ 

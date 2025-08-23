@@ -1,0 +1,12 @@
+{
+  "adminPage.title": "ShareNest 管理ダッシュボード",
+  "adminPage.metaDescription": "ShareNestの車両、予約、ユーザー、収益を管理します。",
+  "dashboard.title": "管理ダッシュボード",
+  "dashboard.welcomeMessage": "ようこそ、管理者さん。現在のプラットフォーム状況を確認できます。",
+  "languageSwitcher.title": "言語設定",
+  "quickStats.title": "主要指標",
+  "quickStats.users": "登録ユーザー数",
+  "quickStats.activeBookings": "現在の予約数",
+  "quickStats.totalRevenue": "総収益",
+  "allRightsReserved": "All rights reserved."
+} 

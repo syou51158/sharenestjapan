@@ -1,0 +1,26 @@
+{
+  "name": "@sharenest/db",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "typecheck": "tsc --noEmit",
+    "dev:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.0.0"
+  },
+  "devDependencies": {
+    "@sharenest/config": "workspace:*",
+    "@types/node": "^18.17.0",
+    "prisma": "^5.0.0",
+    "typescript": "^5.1.0"
+  }
+} 

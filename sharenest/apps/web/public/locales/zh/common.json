@@ -1,0 +1,16 @@
+{
+  "homePage.title": "ShareNest - 随时随地共享汽车",
+  "homePage.metaDescription": "通过ShareNest轻松预订和使用附近的汽车。车主可以利用其闲置资产。",
+  "welcomeMessage": "欢迎来到 ShareNest！",
+  "platformSubtitle": "值得信赖的汽车共享平台",
+  "greeting": "你好，{{name}}！",
+  "sampleButton": "点我",
+  "languageSwitcher.title": "选择语言",
+  "features.title": "主要功能",
+  "features.calendar": "车辆可用性日历",
+  "features.booking": "便捷的小时租赁",
+  "features.payment": "通过Stripe顺利付款",
+  "features.smartLock": "使用智能手机解锁",
+  "userStoriesExample": "例如：“游客想租一辆步行距离内的汽车，从机场到酒店。”我们设想了各种具体的使用场景。",
+  "allRightsReserved": "版权所有。"
+} 

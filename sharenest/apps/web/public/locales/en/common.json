@@ -1,0 +1,19 @@
+{
+  "homePage.title": "ShareNest - Car Sharing Anytime, Anywhere",
+  "homePage.metaDescription": "Easily book and use nearby cars with ShareNest. Car owners can utilize their idle assets.",
+  "welcomeMessage": "Welcome to ShareNest!",
+  "platformSubtitle": "Car sharing at your fingertips",
+  "greeting": "Hello, {{name}}!",
+  "sampleButton": "Click me",
+  "languageSwitcher.title": "Select Language",
+  "features.title": "Main Features",
+  "features.calendar": "Vehicle Availability Calendar",
+  "features.booking": "Easy Hourly Rentals",
+  "features.payment": "Smooth Payments via Stripe",
+  "features.smartLock": "Unlock with Your Smartphone",
+  "userStoriesExample": "e.g., \"A tourist wants to rent a car within walking distance to get from the airport to their hotel.\" We envision various use cases.",
+  "allRightsReserved": "All rights reserved.",
+  "findCar": "Find a Car",
+  "myBookings": "My Bookings",
+  "account": "Account"
+} 

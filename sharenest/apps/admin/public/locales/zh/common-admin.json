@@ -1,0 +1,12 @@
+{
+  "adminPage.title": "ShareNest 管理仪表盘",
+  "adminPage.metaDescription": "管理ShareNest的车辆、预订、用户和收入。",
+  "dashboard.title": "管理仪表盘",
+  "dashboard.welcomeMessage": "欢迎，管理员。查看当前平台状态。",
+  "languageSwitcher.title": "语言设定",
+  "quickStats.title": "关键指标",
+  "quickStats.users": "注册用户数",
+  "quickStats.activeBookings": "当前预订数",
+  "quickStats.totalRevenue": "总收入",
+  "allRightsReserved": "版权所有。"
+} 

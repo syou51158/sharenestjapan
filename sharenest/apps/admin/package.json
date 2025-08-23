@@ -1,0 +1,32 @@
+{
+  "name": "@sharenest/admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\" --ignore-path ../../../.prettierignore",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "13.x.x",
+    "react": "18.x.x",
+    "react-dom": "18.x.x",
+    "@sharenest/ui": "workspace:*",
+    "@sharenest/api": "workspace:*",
+    "next-i18next": "^13.0.0",
+    "i18next": "^22.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.x.x",
+    "@types/react-dom": "18.x.x",
+    "typescript": "5.x.x",
+    "eslint-config-next": "13.x.x",
+    "@sharenest/config": "workspace:*",
+    "tailwindcss": "^3.3.0",
+    "postcss": "^8",
+    "autoprefixer": "^10.0.1"
+  }
+} 

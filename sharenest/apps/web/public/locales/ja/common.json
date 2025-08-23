@@ -1,0 +1,19 @@
+{
+  "homePage.title": "ShareNest - いつでもどこでもカーシェアを",
+  "homePage.metaDescription": "ShareNestで近くの車を簡単に予約・利用。車のオーナーは遊休資産を活用できます。",
+  "welcomeMessage": "ShareNestへようこそ！",
+  "platformSubtitle": "手軽に利用できるカーシェアリング",
+  "greeting": "こんにちは、{{name}}さん！",
+  "sampleButton": "クリックしてね",
+  "languageSwitcher.title": "言語を選択",
+  "features.title": "主な機能",
+  "features.calendar": "車両の空き状況カレンダー",
+  "features.booking": "数時間単位での簡単予約",
+  "features.payment": "Stripeを通じたスムーズな決済",
+  "features.smartLock": "スマホからのスマートロック解錠",
+  "userStoriesExample": "例: 「観光客が空港からホテルへ向かう間に徒歩圏の車を借りたい」など、具体的な利用シーンを想定しています。",
+  "allRightsReserved": "All rights reserved.",
+  "findCar": "車を探す",
+  "myBookings": "予約履歴",
+  "account": "アカウント"
+} 
