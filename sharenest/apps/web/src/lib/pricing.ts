@@ -1,4 +1,20 @@
-import type { Vehicle } from '../data/vehicles';
+type Vehicle = {
+  id: string;
+  title: string;
+  brand: string;
+  model: string;
+  year: number;
+  seats: number;
+  powertrain: string;
+  range_km: number;
+  price_day: number;
+  price_hour: number;
+  price_per_km: number;
+  deposit: number;
+  pickup_points: string[];
+  photos: string[];
+  rules: string[];
+};
 
 export type PriceBreakdown = {
   base: number;

@@ -1,10 +1,24 @@
 import type { NextPage } from 'next';
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { VEHICLES } from '../../data/vehicles';
 import { calculatePrice } from '../../lib/pricing';
+import { getSbSchema, supabase } from '../../lib/supabase';
+import { NavigationHeader } from '../../components/NavigationHeader';
+import { useAuth } from '../../components/auth/AuthProvider';
+
+interface Vehicle {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  seat_count: number;
+  fuel_type: string;
+  daily_rate: number;
+  address: string[];
+  description: string;
+}
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_mock');
 
@@ -13,18 +27,79 @@ type Step = 'details' | 'payment' | 'confirmation';
 const CheckoutPage: NextPage = () => {
   const router = useRouter();
   const { vehicleId } = router.query as { vehicleId?: string };
-  const vehicle = useMemo(() => VEHICLES.find((v) => v.id === vehicleId), [vehicleId]);
+  const { user, loading: authLoading } = useAuth();
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [currentStep, setCurrentStep] = useState<Step>('details');
   const [hours, setHours] = useState(24);
   const [distanceKm, setDistanceKm] = useState(50);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!vehicle) {
+  useEffect(() => {
+    // 認証チェック
+    if (!authLoading && !user) {
+      router.push('/app/login?redirect=' + encodeURIComponent(router.asPath));
+      return;
+    }
+    
+    if (vehicleId && user) {
+      fetchVehicle();
+    }
+  }, [vehicleId, user, authLoading, router]);
+
+  const fetchVehicle = async () => {
+    try {
+      console.log('Fetching vehicle with ID:', vehicleId);
+      
+      // APIルートを使用して車両データを取得
+      const response = await fetch(`/api/vehicles/${vehicleId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch vehicle');
+      }
+      
+      const data = await response.json();
+      console.log('Vehicle data:', data);
+      
+      // データベース構造に合わせて変換
+      setVehicle({
+        id: data.id,
+        make: data.brand,
+        model: data.model,
+        year: data.year,
+        seat_count: data.seats,
+        fuel_type: data.powertrain,
+        daily_rate: data.price_day,
+        address: data.photos ? [data.photos] : [],
+        description: data.title || `${data.brand} ${data.model}`
+      });
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setError(err instanceof Error ? err.message : '予期しないエラーが発生しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="glass rounded-3xl p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-white/70">車両情報を読み込んでいます...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="glass rounded-3xl p-12 text-center">
           <div className="text-6xl mb-6">🚗</div>
-          <h2 className="text-3xl font-bold text-white mb-4">車両が見つかりません</h2>
-          <p className="text-white/70 mb-8">指定された車両は存在しないか、現在利用できません。</p>
+          <h2 className="text-3xl font-bold text-white mb-4">{error}</h2>
+          <p className="text-white/70 mb-8">車両情報を取得できませんでした。</p>
           <button 
             onClick={() => router.push('/app/vehicles')}
             className="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:from-cyan-500 hover:to-blue-600 transition-all duration-300"
@@ -34,6 +109,10 @@ const CheckoutPage: NextPage = () => {
         </div>
       </div>
     );
+  }
+
+  if (!vehicle) {
+    return null;
   }
 
   const price = calculatePrice(vehicle, hours, distanceKm);
@@ -96,9 +175,9 @@ const CheckoutPage: NextPage = () => {
               🚗
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-gray-800">{vehicle.title}</h3>
-              <p className="text-gray-600">{vehicle.brand} {vehicle.model}</p>
-              <p className="text-sm text-gray-500">{vehicle.seats}名乗り</p>
+              <h3 className="text-2xl font-bold text-gray-800">{vehicle.make} {vehicle.model}</h3>
+              <p className="text-gray-600">{vehicle.make} {vehicle.model}</p>
+              <p className="text-sm text-gray-500">{vehicle.seat_count}名乗り</p>
             </div>
           </div>
         </div>
@@ -244,13 +323,12 @@ const CheckoutPage: NextPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+      <NavigationHeader showBack backUrl="/app/vehicles" title="予約・お支払い" />
+      
       {/* ヘッダー */}
-      <div className="relative pt-24 pb-16 px-4">
+      <div className="relative pt-36 pb-16 px-4">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-cyan-900/30"></div>
         <div className="container mx-auto relative z-10">
-          <h1 className="text-5xl md:text-6xl font-black gradient-text-blue text-center mb-8 animate-[fadeInUp_1s_ease-out]">
-            予約・お支払い
-          </h1>
           <StepIndicator />
         </div>
       </div>
@@ -317,25 +395,43 @@ function CheckoutForm({ vehicleId, hours, distanceKm }: { vehicleId: string; hou
     }
 
     if (paymentIntent?.status === 'succeeded') {
-      // 予約確定API呼び出し（簡易実装）
+      // 予約確定API呼び出し
       try {
-        const res = await fetch('/api/payments/confirm-booking', {
+        // 認証トークンを取得
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        
+        if (!token) {
+          alert('認証エラーが発生しました。再度ログインしてください。');
+          router.push('/app/login');
+          return;
+        }
+        
+        const res = await fetch('/api/bookings/create', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({
-            paymentIntentId: paymentIntent.id,
-            userId: 'temp-user-id', // 実際は認証ユーザーIDを使用
             vehicleId,
-            hours,
-            distanceKm,
-            amount,
+            startDate: new Date().toISOString(),
+            endDate: new Date(Date.now() + hours * 60 * 60 * 1000).toISOString(),
+            totalPrice: amount,
+            userDetails: {
+              paymentIntentId: paymentIntent.id,
+              hours,
+              distanceKm
+            }
           }),
         });
+        
         if (res.ok) {
           alert('予約が確定しました！');
           router.push('/app/bookings');
         } else {
-          alert('予約の保存に失敗しました');
+          const errorData = await res.json();
+          alert(`予約の保存に失敗しました: ${errorData.error}`);
         }
       } catch (e) {
         console.error('Booking confirmation error:', e);
@@ -345,7 +441,7 @@ function CheckoutForm({ vehicleId, hours, distanceKm }: { vehicleId: string; hou
     setSubmitting(false);
   };
 
-  return (
+return (
     <div className="space-y-6">
       <div className="glass rounded-2xl p-6">
         <h4 className="text-xl font-bold text-white mb-4">支払い方法</h4>

@@ -3,53 +3,66 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getSupabase } from '../../../lib/supabase';
-import { VEHICLES } from '../../../data/vehicles';
+import { NavigationHeader } from '../../../components/NavigationHeader';
 
 type VehicleRow = {
   id: string;
-  title: string;
-  brand: string;
+  make: string;
   model: string;
   year: number;
-  seats: number;
-  powertrain: string;
-  pickup_points: string[];
-  rules: string[];
+  seat_count: number;
+  fuel_type: string;
+  address: string[];
+  description: string;
+  daily_rate: number;
 };
 
 const VehicleDetailPage: NextPage = () => {
   const router = useRouter();
   const { id } = router.query;
   const [v, setV] = useState<VehicleRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   useEffect(() => {
     if (!id) return;
-    (async () => {
+    
+    const fetchVehicle = async () => {
       try {
-        const { data } = await getSupabase().from('vehicles').select('*').eq('id', id).single();
-        if (data) {
-          setV(data as VehicleRow);
-          return;
+        setLoading(true);
+        setError(null);
+        
+        // APIエンドポイントを使用してデータを取得
+        const response = await fetch(`/api/vehicles/${id}`);
+        if (response.ok) {
+          const data = await response.json();
+          // Supabaseのデータ構造をVehicleRowに変換
+          setV({
+            id: data.id,
+            make: data.brand,
+            model: data.model,
+            year: data.year,
+            seat_count: data.seats,
+            fuel_type: data.powertrain,
+            address: data.pickup_points || [],
+            description: data.title,
+            daily_rate: data.price_day || 6000,
+          });
+        } else {
+          setError('車両データの取得に失敗しました');
         }
-      } catch {}
-      // フォールバック: ローカルデータ
-      const local = VEHICLES.find((x) => x.id === id);
-      if (local) {
-        setV({
-          id: local.id,
-          title: local.title,
-          brand: local.brand,
-          model: local.model,
-          year: local.year,
-          seats: local.seats,
-          powertrain: local.powertrain as string,
-          pickup_points: local.pickup_points,
-          rules: local.rules,
-        } as unknown as VehicleRow);
+      } catch (err) {
+        console.error('Error fetching vehicle:', err);
+        setError('車両データの取得中にエラーが発生しました');
+      } finally {
+        setLoading(false);
       }
-    })();
+    };
+
+    fetchVehicle();
   }, [id]);
 
-  if (!v) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="glass rounded-3xl p-12 text-center">
@@ -60,18 +73,38 @@ const VehicleDetailPage: NextPage = () => {
     );
   }
 
+  if (error || !v) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="glass rounded-3xl p-12 text-center">
+          <div className="text-6xl mb-6">🚗</div>
+          <h2 className="text-3xl font-bold text-white mb-4">車両が見つかりません</h2>
+          <p className="text-white/70 mb-8">{error || '指定された車両は存在しないか、現在利用できません。'}</p>
+          <button 
+            onClick={() => router.push('/app/vehicles')}
+            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:from-cyan-500 hover:to-blue-600 transition-all duration-300"
+          >
+            車両一覧に戻る
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+      <NavigationHeader showBack backUrl="/app/vehicles" title={`${v.make} ${v.model}`} />
+      
       {/* ヒーローセクション */}
-      <div className="relative pt-24 pb-16 px-4">
+      <div className="relative pt-20 pb-16 px-4">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-cyan-900/30"></div>
         <div className="container mx-auto relative z-10">
           <div className="text-center mb-12">
             <h1 className="text-5xl md:text-7xl font-black gradient-text-blue mb-6 animate-[fadeInUp_1s_ease-out]">
-              {v.title}
+              {v.make} {v.model}
             </h1>
             <p className="text-2xl md:text-3xl text-white/80 animate-[fadeInUp_1s_ease-out_0.2s_both]">
-              {v.brand} {v.model} / {v.year}年
+              {v.make} {v.model} / {v.year}年
             </p>
             <div className="h-1 w-32 mx-auto bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full mt-8 animate-[fadeInUp_1s_ease-out_0.4s_both]"></div>
           </div>
@@ -103,7 +136,7 @@ const VehicleDetailPage: NextPage = () => {
                       </div>
                       <div>
                         <p className="text-white/60 text-sm">定員</p>
-                        <p className="text-white text-xl font-bold">{v.seats}名</p>
+                        <p className="text-white text-xl font-bold">{v.seat_count}名</p>
                       </div>
                     </div>
                     
@@ -124,8 +157,8 @@ const VehicleDetailPage: NextPage = () => {
                         ⚡
                       </div>
                       <div>
-                        <p className="text-white/60 text-sm">パワートレイン</p>
-                        <p className="text-white text-lg font-bold">{v.powertrain}</p>
+                        <p className="text-white/60 text-sm">燃料タイプ</p>
+                        <p className="text-white text-lg font-bold">{v.fuel_type}</p>
                       </div>
                     </div>
                     
@@ -135,7 +168,7 @@ const VehicleDetailPage: NextPage = () => {
                       </div>
                       <div>
                         <p className="text-white/60 text-sm">受渡し場所</p>
-                        <p className="text-white text-lg font-bold">{v.pickup_points?.join(', ')}</p>
+                        <p className="text-white text-lg font-bold">{v.address?.join(', ')}</p>
                       </div>
                     </div>
                   </div>
@@ -143,16 +176,9 @@ const VehicleDetailPage: NextPage = () => {
 
                 {/* ルール・特徴 */}
                 <div className="mt-8">
-                  <h3 className="text-xl font-bold text-white mb-4">利用ルール</h3>
-                  <div className="space-y-2">
-                    {v.rules?.map((rule, idx) => (
-                      <div key={idx} className="flex items-center gap-3 bg-white/10 rounded-xl p-3">
-                        <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm">
-                          ✓
-                        </div>
-                        <p className="text-white/80">{rule}</p>
-                      </div>
-                    ))}
+                  <h3 className="text-xl font-bold text-white mb-4">車両説明</h3>
+                  <div className="bg-white/10 rounded-xl p-4">
+                    <p className="text-white/80">{v.description}</p>
                   </div>
                 </div>
               </div>
@@ -167,7 +193,7 @@ const VehicleDetailPage: NextPage = () => {
               <div className="space-y-6">
                 <div className="neomorphism-inset rounded-2xl p-6">
                   <div className="text-5xl font-black gradient-text mb-2">
-                    ¥6,000
+                    ¥{v.daily_rate?.toLocaleString() || '6,000'}
                   </div>
                   <p className="text-gray-600 text-lg">/ 日（24時間）</p>
                 </div>

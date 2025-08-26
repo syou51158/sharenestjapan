@@ -2,7 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  /* font-family: sans-serif; */
-  background-color: #f0f2f5; /* 管理画面向けの背景色例 */
-} 
+@layer base {
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  }
+}
+
+@layer utilities {
+  /* グラデーションテキスト */
+  .gradient-text {
+    @apply bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent;
+  }
+  
+  .gradient-text-blue {
+    @apply bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent;
+  }
+  
+  .gradient-text-green {
+    @apply bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent;
+  }
+  
+  .gradient-text-orange {
+    @apply bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent;
+  }
+
+  /* ガラスモーフィズム効果 */
+  .glass {
+    @apply backdrop-blur-md bg-white/10 border border-white/20;
+  }
+
+  /* 3Dカード効果 */
+  .card-3d {
+    @apply relative overflow-hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+  }
+
+  .card-3d::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+    pointer-events: none;
+  }
+
+  /* ネオモーフィズム */
+  .neomorphism {
+    @apply bg-white/5 backdrop-blur-sm;
+    box-shadow: 
+      8px 8px 16px rgba(0, 0, 0, 0.2),
+      -8px -8px 16px rgba(255, 255, 255, 0.05);
+  }
+
+  .neomorphism-inset {
+    @apply bg-white/5 backdrop-blur-sm;
+    box-shadow: 
+      inset 4px 4px 8px rgba(0, 0, 0, 0.2),
+      inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+  }
+
+  /* アニメーション */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* フローティング背景要素 */
+  .floating-bg {
+    position: absolute;
+    border-radius: 50%;
+    background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(6, 182, 212, 0.1));
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-20px) rotate(180deg);
+    }
+  }
+}

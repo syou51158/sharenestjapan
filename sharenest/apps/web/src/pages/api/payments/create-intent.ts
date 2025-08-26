@@ -1,23 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-import { VEHICLES } from '../../../data/vehicles';
+import { getSbSchema } from '../../../lib/supabase';
 
 type VehicleRow = {
   id: string;
-  price_day: number;
-  price_hour: number;
-  price_per_km: number;
-  deposit: number;
+  daily_rate: number;
+  hourly_rate: number;
 };
 
 function calcAmount(v: VehicleRow, hours: number, distanceKm: number) {
   const days = Math.floor(hours / 24);
   const remainingHours = hours % 24;
-  const base = days * v.price_day + remainingHours * v.price_hour;
-  const distance = v.price_per_km > 0 ? distanceKm * v.price_per_km : 0;
+  const base = days * v.daily_rate + remainingHours * v.hourly_rate;
+  const distance = 0; // Trendスキーマでは従量課金レート未定のため0計上
   const insurance = 1000;
-  const deposit = v.deposit;
+  const deposit = 0;
   const total = base + distance + insurance + deposit;
   return { base, distance, insurance, deposit, total };
 }
@@ -33,26 +31,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const stripeKey = process.env.STRIPE_SECRET_KEY;
 
-    // Supabase から取得を試行
+    // Supabase から取得を試行（Trend Company: public.carsharing_vehicles）
     let vehicle: VehicleRow | null = null;
     if (supabaseUrl && supabaseAnonKey) {
       try {
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
-        const { data: v } = await supabase.from('vehicles').select('*').eq('id', vehicleId).single();
-        if (v) vehicle = v as VehicleRow;
+        const { data: v } = await getSbSchema()
+          .from('vehicles')
+          .select('id, price_day, price_hour')
+          .eq('id', vehicleId)
+          .single();
+        if (v) {
+          vehicle = {
+            id: v.id,
+            daily_rate: v.price_day,
+            hourly_rate: v.price_hour
+          } as VehicleRow;
+        }
       } catch {}
     }
-    // フォールバック: ローカルデータ
+    // 車両が見つからない場合はエラーを返す
     if (!vehicle) {
-      const local = VEHICLES.find((x) => x.id === vehicleId);
-      if (!local) return res.status(404).json({ error: 'vehicle not found' });
-      vehicle = {
-        id: local.id,
-        price_day: local.price_day,
-        price_hour: local.price_hour,
-        price_per_km: local.price_per_km,
-        deposit: local.deposit,
-      } as VehicleRow;
+      return res.status(404).json({ error: 'vehicle not found' });
     }
 
     const breakdown = calcAmount(vehicle as VehicleRow, Number(hours), Number(distanceKm || 0));

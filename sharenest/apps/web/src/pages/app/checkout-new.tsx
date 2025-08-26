@@ -3,8 +3,25 @@ import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { VEHICLES } from '../../data/vehicles';
 import { calculatePrice } from '../../lib/pricing';
+
+type Vehicle = {
+  id: string;
+  title: string;
+  brand: string;
+  model: string;
+  year: number;
+  seats: number;
+  powertrain: string;
+  range_km: number;
+  price_day: number;
+  price_hour: number;
+  price_per_km: number;
+  deposit: number;
+  pickup_points: string[];
+  photos: string[];
+  rules: string[];
+};
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -13,10 +30,45 @@ type Step = 'details' | 'payment' | 'confirmation';
 const CheckoutPage: NextPage = () => {
   const router = useRouter();
   const { vehicleId } = router.query as { vehicleId?: string };
-  const vehicle = useMemo(() => VEHICLES.find((v) => v.id === vehicleId), [vehicleId]);
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<Step>('details');
   const [hours, setHours] = useState(24);
   const [distanceKm, setDistanceKm] = useState(50);
+
+  useEffect(() => {
+    if (!vehicleId) return;
+    
+    const fetchVehicle = async () => {
+      try {
+        const response = await fetch(`/api/vehicles/${vehicleId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setVehicle(data);
+        } else {
+          console.error('Failed to fetch vehicle:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching vehicle:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVehicle();
+  }, [vehicleId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="glass rounded-3xl p-12 text-center">
+          <div className="text-6xl mb-6">⏳</div>
+          <h2 className="text-3xl font-bold text-white mb-4">読み込み中...</h2>
+          <p className="text-white/70">車両情報を取得しています</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!vehicle) {
     return (
@@ -354,4 +406,6 @@ function CheckoutForm({ vehicleId, hours, distanceKm }: { vehicleId: string; hou
 }
 
 export default CheckoutPage;
+
+
 

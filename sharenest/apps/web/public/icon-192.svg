@@ -1,0 +1,23 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" rx="24" fill="#3B82F6"/>
+  <g transform="translate(32, 48)">
+    <!-- Car body -->
+    <rect x="16" y="40" width="96" height="32" rx="16" fill="white"/>
+    <rect x="8" y="56" width="112" height="24" rx="12" fill="white"/>
+    
+    <!-- Windows -->
+    <rect x="24" y="48" width="24" height="16" rx="4" fill="#3B82F6"/>
+    <rect x="56" y="48" width="24" height="16" rx="4" fill="#3B82F6"/>
+    <rect x="88" y="48" width="16" height="16" rx="4" fill="#3B82F6"/>
+    
+    <!-- Wheels -->
+    <circle cx="32" cy="88" r="12" fill="#1F2937"/>
+    <circle cx="32" cy="88" r="6" fill="#6B7280"/>
+    <circle cx="96" cy="88" r="12" fill="#1F2937"/>
+    <circle cx="96" cy="88" r="6" fill="#6B7280"/>
+    
+    <!-- Share symbol -->
+    <circle cx="64" cy="24" r="8" fill="white"/>
+    <path d="M56 16 L72 16 M64 8 L64 32 M56 32 L72 32" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>

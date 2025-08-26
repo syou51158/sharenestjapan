@@ -12,9 +12,18 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   i18n,
+  async redirects() {
+    return [
+      {
+        source: '/find-car',
+        destination: '/app/vehicles',
+        permanent: true,
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
     return config;
   },
 };
 
-module.exports = withPWA(nextConfig); 
+module.exports = withPWA(nextConfig);

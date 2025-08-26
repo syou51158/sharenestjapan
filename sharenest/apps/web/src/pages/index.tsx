@@ -10,8 +10,9 @@ import { getSupabase } from '../lib/supabase';
 import { FaqPreview } from '../components/home/FaqPreview';
 import { StickyCTA } from '../components/home/StickyCTA';
 import { StructuredData } from '../components/seo/StructuredData';
+import { NavigationHeader } from '../components/NavigationHeader';
 
-type VehicleLite = { id: string; title: string; price_day: number; seats: number };
+type VehicleLite = { id: string; brand: string; model: string; price_day: number; seats: number };
 
 const Home: NextPage = () => {
   const { t } = useTranslation('common');
@@ -22,17 +23,17 @@ const Home: NextPage = () => {
       try {
         const { data } = await getSupabase()
           .from('vehicles')
-          .select('id,title,price_day,seats')
+          .select('id,brand,model,price_day,seats')
           .limit(4);
         if (data) setVehicles(data as VehicleLite[]);
       } catch (error) {
         console.warn('Supabase接続エラー:', error);
         // フォールバックデータ
         setVehicles([
-          { id: '1', title: '日産 SAKURA', price_day: 6000, seats: 4 },
-          { id: '2', title: 'Tesla Model 3', price_day: 15000, seats: 5 },
-          { id: '3', title: 'Mercedes EQB', price_day: 12000, seats: 7 },
-          { id: '4', title: 'トヨタ アルファード', price_day: 18000, seats: 8 },
+          { id: '1', brand: '日産', model: 'SAKURA', price_day: 6000, seats: 4 },
+          { id: '2', brand: 'Tesla', model: 'Model 3', price_day: 15000, seats: 5 },
+          { id: '3', brand: 'Mercedes', model: 'EQB', price_day: 12000, seats: 7 },
+          { id: '4', brand: 'トヨタ', model: 'アルファード', price_day: 18000, seats: 8 },
         ]);
       }
     })();
@@ -41,21 +42,21 @@ const Home: NextPage = () => {
   return (
     <div className="min-h-screen overflow-hidden">
       <Head>
-        <title>{`ShareNest - ${t('platformSubtitle')}`}</title>
-        <meta name="description" content={String(t('platformSubtitle'))} />
+        <title>ShareNest Japan - カーシェアリング予約プラットフォーム</title>
+        <meta name="description" content="ShareNest Japanで簡単にカーシェアリングを予約。最新のEV車両からファミリーカーまで、あなたにぴったりの車を見つけましょう。" />
+        <link rel="canonical" href="https://sharenest.jp" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <StructuredData type="LocalBusiness" data={{}} />
-
       {/* 動的背景 */}
       <div className="fixed inset-0 animated-bg opacity-90 -z-10"></div>
       <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/30 to-cyan-900/20 -z-10"></div>
 
-      <Header />
+      <NavigationHeader />
 
       <main className="relative z-10">
         {/* ヒーローセクション */}
-        <section className="min-h-screen flex items-center justify-center px-4 relative">
+        <section className="min-h-screen flex items-center justify-center px-4 relative pt-20">
           {/* フローティング要素 */}
           <div className="absolute top-20 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl animate-[float_6s_ease-in-out_infinite]"></div>
           <div className="absolute top-40 right-20 w-32 h-32 bg-cyan-400/20 rounded-full blur-2xl animate-[float_8s_ease-in-out_infinite_reverse]"></div>
@@ -148,10 +149,10 @@ const Home: NextPage = () => {
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-400/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <h3 className="text-xl font-bold text-white text-center mb-2">{v.title}</h3>
-                  <p className="text-white/70 text-center mb-4">{v.seats}名乗り</p>
+                  <h3 className="text-xl font-bold text-white text-center mb-2">{v.make} {v.model}</h3>
+                  <p className="text-white/70 text-center mb-4">{v.seat_count}名乗り</p>
                   <div className="text-center mb-6">
-                    <span className="text-3xl font-black gradient-text">¥{v.price_day.toLocaleString()}</span>
+                    <span className="text-3xl font-black gradient-text">¥{v.daily_rate.toLocaleString()}</span>
                     <span className="text-white/60 text-sm">/日〜</span>
                   </div>
                   <Link 
@@ -231,4 +232,4 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
   };
 };
 
-export default Home; 
+export default Home;

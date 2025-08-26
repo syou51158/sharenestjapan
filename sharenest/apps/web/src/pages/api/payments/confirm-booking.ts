@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '../../../lib/supabase-admin';
 import { localDb } from '../../../server/localDb';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -23,22 +24,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     endAt.setHours(endAt.getHours() + Number(hours));
 
     if (canUseSupabase && supabase) {
-      const { data: booking, error } = await supabase
+      const { data: booking, error } = await supabaseAdmin
+        .schema('sharenest')
         .from('bookings')
         .insert({
           user_id: userId,
           vehicle_id: vehicleId,
-          start_at: startAt.toISOString(),
-          end_at: endAt.toISOString(),
-          pickup_point: '京都駅',
+          start_time: startAt.toISOString(),
+          end_time: endAt.toISOString(),
           status: 'confirmed',
-          payment_intent: paymentIntentId,
+          payment_status: 'paid',
+          stripe_payment_intent_id: paymentIntentId,
           distance_km: Number(distanceKm || 0),
-          charges: {
-            amount: Number(amount),
-            currency: 'jpy',
-            paid_at: new Date().toISOString(),
-          },
+          total_amount: Number(amount),
         })
         .select()
         .single();

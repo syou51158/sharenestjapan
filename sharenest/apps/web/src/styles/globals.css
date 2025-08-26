@@ -151,3 +151,8 @@ body {
 }
 
 /* 多言語切り替えボタンが常に表示されるように、必要に応じてスタイル調整 */ 
+
+/* ユーティリティクラス */
+.justify-center {
+  justify-content: center;
+}
