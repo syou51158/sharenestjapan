@@ -4,9 +4,17 @@ import '../styles/globals.css'; // Tailwind CSS を含むグローバルスタ�
 import { DefaultSeo } from 'next-seo';
 import { defaultSEO } from '../seo/defaultSeo';
 import { AuthProvider } from '../components/auth/AuthProvider';
+import { ProtectedRoute } from '../components/auth/ProtectedRoute';
+import { PageTransition } from '../components/PageTransition';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const path = router.pathname || '';
+  const isAppRoute = path.startsWith('/app');
+  const isAuthPage = path === '/app/login' || path === '/app/register';
+
   return (
     <AuthProvider>
       <Head>
@@ -18,7 +26,15 @@ function MyApp({ Component, pageProps }: AppProps) {
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </Head>
       <DefaultSeo {...defaultSEO} />
-      <Component {...pageProps} />
+      <PageTransition>
+        {isAppRoute && !isAuthPage ? (
+          <ProtectedRoute>
+            <Component {...pageProps} />
+          </ProtectedRoute>
+        ) : (
+          <Component {...pageProps} />
+        )}
+      </PageTransition>
     </AuthProvider>
   );
 }

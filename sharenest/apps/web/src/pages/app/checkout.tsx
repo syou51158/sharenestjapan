@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { calculatePrice } from '../../lib/pricing';
-import { getSbSchema, supabase } from '../../lib/supabase';
+import { getSbSchema } from '../../lib/supabase';
 import { NavigationHeader } from '../../components/NavigationHeader';
 import { useAuth } from '../../components/auth/AuthProvider';
 
@@ -398,7 +398,7 @@ function CheckoutForm({ vehicleId, hours, distanceKm }: { vehicleId: string; hou
       // 予約確定API呼び出し
       try {
         // 認証トークンを取得
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await getSbSchema().auth.getSession();
         const token = session?.access_token;
         
         if (!token) {

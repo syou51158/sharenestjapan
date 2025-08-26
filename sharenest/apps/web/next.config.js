@@ -12,6 +12,16 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   i18n,
+  // ページ遷移時のローディング問題を解決するための設定
+  experimental: {
+    optimizeCss: false,
+    scrollRestoration: true,
+  },
+  // Fast Refreshの設定を最適化
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
   async redirects() {
     return [
       {
@@ -22,6 +32,26 @@ const nextConfig = {
     ];
   },
   webpack: (config, { isServer }) => {
+    // ページ遷移時のパフォーマンス最適化
+    config.optimization = {
+      ...config.optimization,
+      splitChunks: {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...config.optimization.splitChunks?.cacheGroups,
+          default: false,
+          vendors: false,
+          // 共通チャンクの最適化
+          framework: {
+            chunks: 'all',
+            name: 'framework',
+            test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+            priority: 40,
+            enforce: true,
+          },
+        },
+      },
+    };
     return config;
   },
 };

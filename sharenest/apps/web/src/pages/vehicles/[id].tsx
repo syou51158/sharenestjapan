@@ -159,7 +159,7 @@ const VehicleDetail: NextPage = () => {
                     alt={`${vehicle.title} - ${index + 1}`}
                     className="w-full h-64 object-cover rounded-lg"
                     onError={(e) => {
-                      e.currentTarget.src = '/images/placeholder-car.jpg';
+                      e.currentTarget.src = '/api/placeholder/800/600';
                     }}
                   />
                 ))

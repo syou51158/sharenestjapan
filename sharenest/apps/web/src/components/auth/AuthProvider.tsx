@@ -25,6 +25,7 @@ type AuthContextType = {
   isAdmin: boolean;
   isOwner: boolean;
   isVerified: boolean;
+  accessToken: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
@@ -40,35 +41,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const supabase = getSupabase();
 
   useEffect(() => {
-    // 初回アクセス時の現在のセッションを取得
-    const getInitialSession = async () => {
+    let isMounted = true;
+    console.log('🔐 AuthProvider初期化開始');
+    
+    const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('📋 初期セッション取得:', { session: !!session, error });
         
+        if (!isMounted) return;
+        
+        if (error) {
+          console.error('❌ セッション取得エラー:', error);
+          setLoading(false);
+          return;
+        }
+
         if (session?.user) {
-          // プロフィール取得の完了を待たずに開始し、UIのloadingは解除する
-          // これによりネットワーク遅延や失敗時でもヘッダーがスピナーのままにならない
-          fetchUserProfile(session.user.id).catch((err) => {
-            console.error('Deferred profile fetch failed:', err);
-          });
+          console.log('👤 初期ユーザー設定:', session.user.id);
+          setUser(session.user);
+          setAccessToken(session.access_token);
+          setLoading(false); // ユーザー設定後すぐにローディング終了
+          // プロフィール取得を並行実行
+          fetchUserProfile(session.user.id).catch(console.error);
+        } else {
+          // セッションがない場合は即座にローディング終了
+          setLoading(false);
         }
       } catch (error) {
-        console.error('Error getting initial session:', error);
-      } finally {
-        // 初期化完了後、即座にloadingを解除
-        setLoading(false);
+        console.error('❌ 認証初期化エラー:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    getInitialSession();
+    initializeAuth();
+    
+    return () => {
+      isMounted = false;
+    };
 
     // 認証状態の変更を監視
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 認証状態変更:', event, session?.user?.id || '未ログイン');
+      
+      if (!isMounted) return;
+      
+      // 状態を即座に更新
       setUser(session?.user ?? null);
+      setAccessToken(session?.access_token ?? null);
+      
+      // ログアウト時は即座にプロフィールをクリア
+      if (event === 'SIGNED_OUT') {
+        console.log('🚪 ログアウト検知 - プロフィールクリア');
+        setUserProfile(null);
+        return;
+      }
       
       if (session?.user) {
         // 新規ユーザーの場合、プロフィールを作成
@@ -89,84 +122,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
         
-        await fetchUserProfile(session.user.id);
+        // プロフィール取得をバックグラウンドで実行
+        fetchUserProfile(session.user.id).catch((err) => {
+          console.error('Profile fetch failed during auth state change:', err);
+        });
       } else {
         setUserProfile(null);
       }
     });
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, []); // supabaseは依存配列から削除（キャッシュされたクライアントなので変更されない）
 
   const fetchUserProfile = async (userId: string) => {
-    console.log('🔍 Fetching user profile for:', userId);
-    console.log('📧 User email:', user?.email);
-    console.log('🖼️ Google avatar URL:', user?.user_metadata?.avatar_url);
-    
-    // 認証状態の詳細確認
-    const session = await supabase.auth.getSession();
-    console.log('🔐 Current session:', {
-      hasSession: !!session.data.session,
-      userId: session.data.session?.user?.id,
-      accessToken: session.data.session?.access_token ? 'present' : 'missing',
-      tokenType: session.data.session?.token_type
-    });
-    
     try {
-      // リクエスト前にSupabaseクライアントの状態を確認
-      console.log('🌐 Supabase client config:', {
-        url: supabase.supabaseUrl,
-        schema: 'sharenest',
-        hasAuth: !!supabase.auth
-      });
-      
+      console.log('📋 ユーザープロフィール取得開始:', userId);
       const { data, error } = await supabase
         .schema('sharenest')
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
-      
+
       if (error) {
-        console.error('❌ Error fetching user profile:', error);
-        if (error.code === 'PGRST116') {
-          // ユーザープロフィールが存在しない場合は作成
-          console.log('👤 User profile not found, creating new profile...');
+        console.log('📊 プロフィールエラー:', (error as any).code, (error as any).message);
+
+        if ((error as any).code === 'PGRST116') {
+          console.log('🆕 プロフィールが存在しないため作成します');
           if (user) {
-            await createUserProfile(user);
+            try {
+              await createUserProfile(user);
+            } catch (createError) {
+              console.error('❌ プロフィール作成エラー:', createError);
+            }
           }
           return;
         }
+
+        // ここでは仮プロフィールは設定しない（権限やRLS問題の早期検知のため）
         throw error;
       }
-      
-      console.log('📊 Current database avatar:', data?.avatar);
-      
+
+      console.log('✅ プロフィール取得成功:', (data as any)?.name);
+
       // Google認証の場合、プロフィール画像を自動更新
-      if (user?.user_metadata?.avatar_url && (!data.avatar || data.avatar !== user.user_metadata.avatar_url)) {
-        console.log('🔄 Avatar update needed. Updating from Google URL...');
-        const { error: updateError } = await supabase
-          .schema('sharenest')
-          .from('users')
-          .update({ 
-            avatar: user.user_metadata.avatar_url,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', userId);
-        
-        if (!updateError) {
-          data.avatar = user.user_metadata.avatar_url;
-          console.log('✅ Avatar updated successfully!');
-        } else {
-          console.error('❌ Failed to update avatar:', updateError);
+      if (user?.user_metadata?.avatar_url && (!data!.avatar || data!.avatar !== user.user_metadata.avatar_url)) {
+        try {
+          const { error: updateError } = await supabase
+            .schema('sharenest')
+            .from('users')
+            .update({ 
+              avatar: user.user_metadata.avatar_url,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+          
+          if (!updateError) {
+            (data as any).avatar = user.user_metadata.avatar_url;
+          }
+        } catch (updateError) {
+          console.warn('⚠️ アバター更新エラー:', updateError);
         }
-      } else {
-        console.log('ℹ️ No avatar update needed');
       }
       
-      setUserProfile(data);
+      setUserProfile(data as any);
     } catch (err) {
-      console.error('💥 Unexpected error in fetchUserProfile:', err);
-      // エラーが発生してもアプリを停止させない
+      console.error('❌ プロフィール取得エラー:', err);
+      // エラー時もプロフィールをnullにして続行
       setUserProfile(null);
     }
   };
@@ -210,39 +231,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     try {
-      const { error: profileError } = await supabase
-        .schema('sharenest')
-        .from('users')
-        .insert({ 
-          id: user.id, 
-          email: userEmail, 
-          name: userName, 
-          avatar: avatarUrl,
-          role: 'user', 
-          kyc_status: 'pending',
-          is_verified: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
+      console.log('🆕 新規ユーザープロフィール作成:', user.id);
       
-      if (profileError) {
-        console.error('❌ Error creating user profile:', profileError);
-        throw profileError;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('プロフィール作成タイムアウト')), 4000)
+      );
+      
+      const newProfile = {
+        id: user.id,
+        email: userEmail,
+        name: userName,
+        avatar: avatarUrl,
+        role: 'user',
+        kyc_status: 'pending',
+        is_verified: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data, error } = await Promise.race([
+        supabase
+          .schema('sharenest')
+          .from('users')
+          .insert([newProfile])
+          .select()
+          .single(),
+        timeoutPromise
+      ]) as any;
+
+      if (error) {
+        console.error('❌ プロフィール作成エラー:', error);
+        // 仮プロフィールは設定しない（本来のロール/権限が不明になるため）
+        throw error;
       }
       
-      console.log('✅ User profile created successfully!');
+      console.log('✅ プロフィール作成成功');
+      setUserProfile(data);
       
-      // プロフィール作成後、再度フェッチ
-      await fetchUserProfile(user.id);
     } catch (err) {
-      console.error('💥 Unexpected error in createUserProfile:', err);
-      throw err;
+      console.error('❌ プロフィール作成エラー:', err);
+      // 失敗時はnullのまま（UI側で再試行/エラー表示）
     }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      console.log('🚪 ログアウト処理開始...');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ ログアウトエラー:', error);
+        throw error;
+      }
+      console.log('✅ ログアウト成功');
+      // 状態を明示的にクリア
+      setUser(null);
+      setUserProfile(null);
+      setAccessToken(null);
+    } catch (error) {
+      console.error('❌ ログアウト処理でエラー:', error);
+      throw error;
+    }
   };
 
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
@@ -288,6 +336,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin, 
       isOwner, 
       isVerified,
+      accessToken,
       signIn,
       signInWithGoogle, 
       signUp, 
@@ -306,6 +355,7 @@ export function useAuth() {
   if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 }
+
 
 
 

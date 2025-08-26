@@ -24,42 +24,74 @@ const VehicleDetailPage: NextPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // フェッチにタイムアウトを設けるヘルパー
+  const fetchWithTimeout = async (resource: RequestInfo, options: RequestInit & { timeout?: number } = {}) => {
+    const { timeout = 15000, ...rest } = options;
+    const controller = new AbortController();
+    const idTimer = setTimeout(() => controller.abort(), timeout);
+    try {
+      const resp = await fetch(resource, { ...rest, signal: controller.signal });
+      return resp;
+    } finally {
+      clearTimeout(idTimer);
+    }
+  };
+  
   useEffect(() => {
     if (!id) return;
     
+    let isMounted = true;
+
     const fetchVehicle = async () => {
       try {
         setLoading(true);
         setError(null);
         
         // APIエンドポイントを使用してデータを取得
-        const response = await fetch(`/api/vehicles/${id}`);
+        const response = await fetchWithTimeout(`/api/vehicles/${id}`, { timeout: 8000 });
         if (response.ok) {
           const data = await response.json();
-          // Supabaseのデータ構造をVehicleRowに変換
-          setV({
-            id: data.id,
-            make: data.brand,
-            model: data.model,
-            year: data.year,
-            seat_count: data.seats,
-            fuel_type: data.powertrain,
-            address: data.pickup_points || [],
-            description: data.title,
-            daily_rate: data.price_day || 6000,
-          });
+          // コンポーネントがアンマウントされていない場合のみ状態を更新
+          if (isMounted) {
+            // Supabaseのデータ構造をVehicleRowに変換
+            setV({
+              id: data.id,
+              make: data.brand,
+              model: data.model,
+              year: data.year,
+              seat_count: data.seats,
+              fuel_type: data.powertrain,
+              address: data.pickup_points || [],
+              description: data.title,
+              daily_rate: data.price_day || 6000,
+            });
+          }
         } else {
-          setError('車両データの取得に失敗しました');
+          if (isMounted) {
+            setError('車両データの取得に失敗しました');
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching vehicle:', err);
-        setError('車両データの取得中にエラーが発生しました');
+        if (isMounted) {
+          if (err?.name === 'AbortError') {
+            setError('サーバー応答がタイムアウトしました（8秒）');
+          } else {
+            setError('車両データの取得中にエラーが発生しました');
+          }
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchVehicle();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   if (loading) {

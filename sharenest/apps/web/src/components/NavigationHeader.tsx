@@ -203,7 +203,7 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
                         className="block px-4 py-2 text-sm text白 hover:bg-slate-700/50 transition-colors duration-200"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        プロフィール設定
+                        アカウント管理
                       </Link>
                       
                       {isOwner && (
@@ -352,7 +352,7 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
                       className="block px-4 py-2 text-left text-white/80 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors duration-200"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      プロフィール設定
+                      アカウント管理
                     </Link>
                     
                     {isOwner && (

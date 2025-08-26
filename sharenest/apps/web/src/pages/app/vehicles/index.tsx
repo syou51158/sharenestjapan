@@ -54,13 +54,28 @@ const VehiclesPage: NextPage = () => {
     sortBy: 'price_asc'
   });
 
+  // フェッチにタイムアウトを設けるヘルパー
+  const fetchWithTimeout = async (resource: RequestInfo, options: RequestInit & { timeout?: number } = {}) => {
+    const { timeout = 15000, ...rest } = options;
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    try {
+      const resp = await fetch(resource, { ...rest, signal: controller.signal });
+      return resp;
+    } finally {
+      clearTimeout(id);
+    }
+  };
+
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchVehicles = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        const response = await fetch('/api/vehicles');
+        const response = await fetchWithTimeout('/api/vehicles', { timeout: 8000 });
         if (!response.ok) {
           throw new Error('車両データの取得に失敗しました');
         }
@@ -90,17 +105,32 @@ const VehiclesPage: NextPage = () => {
           owner_name: vehicle.owner_name || 'オーナー'
         }));
         
-        setVehicles(vehiclesData);
-        setFilteredVehicles(vehiclesData);
-      } catch (err) {
+        // コンポーネントがアンマウントされていない場合のみ状態を更新
+        if (isMounted) {
+          setVehicles(vehiclesData);
+          setFilteredVehicles(vehiclesData);
+        }
+      } catch (err: any) {
         console.error('Error fetching vehicles:', err);
-        setError('車両データの取得に失敗しました');
+        if (isMounted) {
+          if (err?.name === 'AbortError') {
+            setError('サーバー応答がタイムアウトしました（8秒）');
+          } else {
+            setError('車両データの取得に失敗しました');
+          }
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchVehicles();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // フィルタリング機能

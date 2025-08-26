@@ -149,10 +149,10 @@ const Home: NextPage = () => {
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-400/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   </div>
-                  <h3 className="text-xl font-bold text-white text-center mb-2">{v.make} {v.model}</h3>
-                  <p className="text-white/70 text-center mb-4">{v.seat_count}名乗り</p>
+                  <h3 className="text-xl font-bold text-white text-center mb-2">{v.brand} {v.model}</h3>
+                  <p className="text-white/70 text-center mb-4">{v.seats}名乗り</p>
                   <div className="text-center mb-6">
-                    <span className="text-3xl font-black gradient-text">¥{v.daily_rate.toLocaleString()}</span>
+                    <span className="text-3xl font-black gradient-text">¥{v.price_day?.toLocaleString() || '0'}</span>
                     <span className="text-white/60 text-sm">/日〜</span>
                   </div>
                   <Link 

@@ -24,10 +24,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .in('bookings.vehicle_id', vehicleIds);
 
       // レビューデータを車両ごとに集計
-      const vehicleReviews = vehicles?.map(vehicle => {
-        const vehicleReviews = reviewData?.filter(r => r.bookings.vehicle_id === vehicle.id) || [];
-        const ratings = vehicleReviews.map(r => r.rating);
-        const rating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+      const enrichedVehicles = vehicles?.map((vehicle: any) => {
+        const reviewsForVehicle = (reviewData || []).filter((r: any) => (r?.bookings?.vehicle_id) === vehicle.id);
+        const ratings = reviewsForVehicle.map((r: any) => Number(r?.rating) || 0);
+        const rating = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
         
         return {
           ...vehicle,
@@ -36,12 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         };
       });
 
-      if (error) {
-        console.error('Error fetching vehicles:', error);
-        return res.status(500).json({ error: 'Failed to fetch vehicles' });
-      }
-
-      return res.status(200).json(vehicleReviews || []);
+      return res.status(200).json(enrichedVehicles || []);
     } catch (error) {
       console.error('Unexpected error:', error);
       return res.status(500).json({ error: 'Internal server error' });

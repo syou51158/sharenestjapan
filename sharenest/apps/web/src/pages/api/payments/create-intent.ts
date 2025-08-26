@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const stripeKey = process.env.STRIPE_SECRET_KEY;
 
-    // Supabase から取得を試行（Trend Company: public.carsharing_vehicles）
+    // Supabase から取得を試行（Trend Company: sharenest.vehicles）
     let vehicle: VehicleRow | null = null;
     if (supabaseUrl && supabaseAnonKey) {
       try {

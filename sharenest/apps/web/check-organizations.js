@@ -1,8 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // 環境変数からSupabase設定を取得
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://iygiuutslpnvrheqbqgv.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5Z2l1dXRzbHBudnJoZXFicWd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNjkzNzksImV4cCI6MjA2Mjg0NTM3OX0.skNBoqKqMl69jLLCyGvfS6CUY7TiCftaUOuLlrdUl10';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fzfnjtuuxmxpngzwaueo.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6Zm5qdHV1eG14cG5nendhdWVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0MTgxMTcsImV4cCI6MjA3MDk5NDExN30.7g7hvPHgMvt3RtYmTWdgkGejWcicH2R9gzRUzclhJpo';
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
