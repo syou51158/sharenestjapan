@@ -1,4 +1,5 @@
 import { NavigationHeader } from '../components/NavigationHeader';
+import { Footer } from '../components/layout/Footer';
 
 export default function Features() {
   const features = [
@@ -93,6 +94,8 @@ export default function Features() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

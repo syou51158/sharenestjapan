@@ -3,6 +3,8 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import type { GetStaticProps, NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
+import { NavigationHeader } from '../components/NavigationHeader';
+import { Footer } from '../components/layout/Footer';
 
 const MyBookings: NextPage = () => {
   const { t } = useTranslation('common');
@@ -65,109 +67,57 @@ const MyBookings: NextPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
       <Head>
-        <title>{`${t('myBookings')} | ShareNest`}</title>
-        <meta name="description" content={String(t('myBookings'))} />
+        <title>マイブッキング | ShareNest</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-blue-600">ShareNest</Link>
-          <nav>
-            <ul className="flex space-x-6">
-              <li>
-                <Link href="/find-car" className="font-medium text-gray-600 hover:text-blue-600">
-                  {t('findCar')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/my-bookings" className="font-medium text-blue-600">
-                  {t('myBookings')}
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">{t('myBookings')}</h1>
-        
-        <div className="bg-white rounded-lg shadow-md">
-          {bookings.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      車種
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      期間
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      場所
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      料金
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      状態
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      操作
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {bookings.map((booking) => (
-                    <tr key={booking.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-gray-900">{booking.carName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {formatDate(booking.startDate)} 〜 <br />
-                          {formatDate(booking.endDate)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{booking.location}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">¥{booking.price.toLocaleString()}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusDisplay(booking.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link href={`/bookings/${booking.id}`} className="text-blue-600 hover:text-blue-900">
-                          詳細
-                        </Link>
-                        {booking.status === 'upcoming' && (
-                          <span className="ml-3 text-red-600 hover:text-red-900 cursor-pointer">
-                            キャンセル
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="py-8 text-center text-gray-500">
-              予約履歴はありません
-            </div>
-          )}
-        </div>
+  
+      <NavigationHeader />
+  
+      <main className="container mx-auto px-4 py-8 pt-24">
+        <h1 className="text-3xl font-bold text-white mb-6">マイブッキング</h1>
+  
+        {bookings.length === 0 ? (
+          <div className="glass rounded-2xl p-8 text-center">
+            <p className="text-white/80 mb-4">まだ予約はありません。</p>
+            <Link href="/app/vehicles" className="inline-block px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium rounded-lg hover:from-cyan-500 hover:to-blue-600 transition-all">
+              車両を探す
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {bookings.map((booking) => (
+              <div key={booking.id} className="card-3d glass rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-white">{booking.vehicleTitle}</h2>
+                  <span className={`px-3 py-1 rounded-full text-sm ${booking.status === 'confirmed' ? 'bg-green-500/20 text-green-300' : booking.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-300'}`}>
+                    {booking.statusLabel}
+                  </span>
+                </div>
+                <div className="space-y-2 text-white/90 text-sm">
+                  <div className="flex justify-between"><span>予約ID</span><span>{booking.id}</span></div>
+                  <div className="flex justify-between"><span>開始</span><span>{formatDate(booking.startDate)}</span></div>
+                  <div className="flex justify-between"><span>終了</span><span>{formatDate(booking.endDate)}</span></div>
+                  <div className="flex justify-between"><span>合計料金</span><span className="font-semibold">¥{booking.totalPrice}</span></div>
+                </div>
+                <div className="mt-4 flex gap-3">
+                  <Link href={`/app/bookings/${booking.id}`} className="px-4 py-2 bg-white/10 border border-white/10 text-white rounded-lg hover:bg-white/20 transition">
+                    詳細
+                  </Link>
+                  {booking.canCancel && (
+                    <button onClick={() => handleCancel(booking.id)} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:from-cyan-500 hover:to-blue-600 transition">
+                      キャンセル
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
-
-      <footer className="container mx-auto p-4 text-center text-gray-500 mt-8">
-        © {new Date().getFullYear()} ShareNest
-      </footer>
+  
+      <Footer />
     </div>
   );
 };
@@ -180,4 +130,4 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
   };
 };
 
-export default MyBookings; 
+export default MyBookings;

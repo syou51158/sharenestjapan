@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getSupabase } from '../../../lib/supabase';
 import { NavigationHeader } from '../../../components/NavigationHeader';
+import { Footer } from '../../../components/layout/Footer';
 
 type VehicleRow = {
   id: string;
@@ -293,6 +294,8 @@ const VehicleDetailPage: NextPage = () => {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

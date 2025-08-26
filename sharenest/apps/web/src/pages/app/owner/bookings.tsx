@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import { NavigationHeader } from '../../../components/NavigationHeader';
+import { Footer } from '../../../components/layout/Footer';
 
 interface Booking {
   id: string;
@@ -449,6 +450,8 @@ export default function OwnerBookings() {
           </div>
         )}
       </main>
+
+      <Footer />
 
       {/* 詳細モーダル */}
       {showDetailModal && selectedBooking && (

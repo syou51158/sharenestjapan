@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { NavigationHeader } from '../../../../components/NavigationHeader';
+import { Footer } from '../../../../components/layout/Footer';
 import { PhotoUpload } from '../../../../components/upload/PhotoUpload';
 
 interface VehicleFormData {
@@ -435,6 +436,8 @@ export default function AddVehicle() {
           </div>
         </form>
       </main>
+
+      <Footer />
     </div>
   );
 }

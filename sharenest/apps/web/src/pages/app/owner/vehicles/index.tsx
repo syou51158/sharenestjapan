@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import { NavigationHeader } from '../../../../components/NavigationHeader';
+import { Footer } from '../../../../components/layout/Footer';
 
 interface Vehicle {
   id: string;
@@ -337,6 +338,8 @@ export default function OwnerVehicles() {
           </div>
         )}
       </main>
+
+      <Footer />
 
       {/* 削除確認モーダル */}
       {showDeleteModal && selectedVehicle && (

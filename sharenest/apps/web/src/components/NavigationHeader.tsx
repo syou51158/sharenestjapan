@@ -96,6 +96,7 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
       { href: '/app/bookings', label: '予約履歴' },
       { href: '/features', label: '機能' },
       { href: '/pricing', label: '料金' },
+      { href: '/faq', label: 'FAQ' },
     ];
   };
 
@@ -127,7 +128,7 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
           {/* 中央: ページタイトル（モバイルでは省略） */}
           {title && (
             <div className="hidden md:block">
-              <h1 className="text-xl font-semibold text白">{title}</h1>
+              <h1 className="text-xl font-semibold text-white">{title}</h1>
             </div>
           )}
 
@@ -200,7 +201,7 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
                     <div className="py-1">
                       <Link
                         href="/app/profile"
-                        className="block px-4 py-2 text-sm text白 hover:bg-slate-700/50 transition-colors duration-200"
+                        className="block px-4 py-2 text-sm text-white hover:bg-slate-700/50 transition-colors duration-200"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         アカウント管理
@@ -209,7 +210,7 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
                       {isOwner && (
                         <Link
                           href="/app/owner/dashboard"
-                          className="block px-4 py-2 text-sm text白 hover:bg-slate-700/50 transition-colors duration-200"
+                          className="block px-4 py-2 text-sm text-white hover:bg-slate-700/50 transition-colors duration-200"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           オーナーダッシュボード
@@ -219,7 +220,7 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
                       {isAdmin && (
                         <Link
                           href="/admin"
-                          className="block px-4 py-2 text-sm text白 hover:bg-slate-700/50 transition-colors duration-200"
+                          className="block px-4 py-2 text-sm text-white hover:bg-slate-700/50 transition-colors duration-200"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           管理者画面
@@ -240,7 +241,7 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
                     <div className="border-t border-white/10 pt-1">
                       <button
                         onClick={handleSignOut}
-                        className="w-full text-left px-4 py-2 text-sm text白 hover:bg-slate-700/50 transition-colors duration-200"
+                        className="w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-700/50 transition-colors duration-200"
                       >
                         ログアウト
                       </button>
@@ -403,7 +404,7 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
                   </Link>
                   <Link
                     href="/app/register"
-                    className="block px-4 py-2 text-center bg-gradient-to-r from-blue-600 to-cyan-500 text白 font-medium rounded-lg hover:from-cyan-500 hover:to-blue-600 transition-all duration-300"
+                    className="block px-4 py-2 text-center bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium rounded-lg hover:from-cyan-500 hover:to-blue-600 transition-all duration-300"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     新規登録

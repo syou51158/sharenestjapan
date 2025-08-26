@@ -1,36 +1,23 @@
 import { NavigationHeader } from '../components/NavigationHeader';
+import { Footer } from '../components/layout/Footer';
 
-export default function FAQ() {
+export default function FAQPage() {
   const faqs = [
     {
-      question: "決済方法は？",
-      answer: "Stripe（Apple Pay/Google Pay対応のカード）でお支払いいただけます。セキュアで安心な決済システムを採用しています。",
-      icon: "💳"
+      question: "予約の変更やキャンセルはできますか？",
+      answer: "予約開始24時間前までのキャンセルは手数料無料です。それ以降は所定の手数料がかかります。変更は予約開始前であれば可能です。"
     },
     {
-      question: "デポジットは？",
-      answer: "車両により異なります。利用後の追加請求がなければ自動返金されます。デポジットは完全に返金されます。",
-      icon: "🔒"
-    },
-    {
-      question: "充電は？",
-      answer: "EVは返却時SOC60%以上が目安です。急速充電の費用は実費です。充電ステーションは全国に充実しています。",
-      icon: "🔋"
-    },
-    {
-      question: "予約のキャンセルは可能ですか？",
-      answer: "開始24時間前まで無料でキャンセル可能です。それ以降はキャンセル料が発生する場合があります。",
-      icon: "🔄"
+      question: "支払い方法は何がありますか？",
+      answer: "クレジットカード（Visa/Master/Amex）、Apple Pay、Google Payに対応しています。"
     },
     {
       question: "保険は含まれていますか？",
-      answer: "はい、全ての車両に対して保険が含まれています。万が一の際も安心してご利用いただけます。",
-      icon: "🛡️"
+      answer: "基本料金に対物・対人保険が含まれます。免責補償の追加も可能です。"
     },
     {
-      question: "年齢制限はありますか？",
-      answer: "運転免許をお持ちの方であれば、年齢制限はありません。ただし、一定の運転経験が必要な車両もございます。",
-      icon: "🚗"
+      question: "領収書は発行できますか？",
+      answer: "はい、予約完了後のマイページからPDF形式でダウンロード可能です。"
     }
   ];
 
@@ -50,40 +37,38 @@ export default function FAQ() {
             <span className="gradient-text">よくある質問</span>
           </h1>
           <p className="text-white/70 text-xl max-w-2xl mx-auto">
-            ご利用前の疑問にお答えします
+            お客様からよくいただくご質問と回答をまとめました
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-6">
-          {faqs.map((faq, index) => (
-            <div key={index} className="card-3d glass rounded-2xl p-8 hover:scale-105 transition-all duration-500">
-              <div className="flex items-start gap-4">
-                <div className="text-4xl flex-shrink-0">{faq.icon}</div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-3">
-                    Q. {faq.question}
-                  </h3>
-                  <p className="text-white/80 leading-relaxed">
-                    A. {faq.answer}
-                  </p>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          {faqs.map((item, index) => (
+            <div key={index} className="card-3d glass rounded-3xl p-8 hover:scale-105 transition-all duration-500">
+              <h2 className="text-2xl font-bold text-white mb-4">{item.question}</h2>
+              <p className="text-white/80 leading-relaxed">{item.answer}</p>
             </div>
           ))}
         </div>
 
         <div className="mt-12 text-center">
-          <div className="glass rounded-3xl p-8 max-w-2xl mx-auto">
-            <h3 className="text-2xl font-bold text-white mb-4">お困りですか？</h3>
+          <div className="glass rounded-3xl p-8 max-w-3xl mx-auto">
+            <h3 className="text-2xl font-bold text-white mb-4">解決しない場合は</h3>
             <p className="text-white/70 text-lg mb-6">
-              その他ご不明な点がございましたら、お気軽にお問い合わせください
+              お問い合わせフォームからお気軽にご相談ください。
             </p>
-            <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:from-cyan-500 hover:to-blue-600 transition-all duration-300 transform hover:scale-105">
-              お問い合わせ
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:from-cyan-500 hover:to-blue-600 transition-all duration-300 transform hover:scale-105">
+                お問い合わせ
+              </button>
+              <button className="px-6 py-3 border border-white/30 text-white font-bold rounded-xl hover:bg-white/10 transition-all duration-300">
+                ガイドラインを読む
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

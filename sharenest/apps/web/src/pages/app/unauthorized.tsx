@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../../components/auth/AuthProvider';
 import { NavigationHeader } from '../../components/NavigationHeader';
+import { Footer } from '../../components/layout/Footer';
 
 const UnauthorizedPage: NextPage = () => {
   const { userProfile, isAdmin, isOwner } = useAuth();
@@ -141,6 +142,8 @@ const UnauthorizedPage: NextPage = () => {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

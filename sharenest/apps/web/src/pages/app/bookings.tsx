@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavigationHeader } from '../../components/NavigationHeader';
+import { Footer } from '../../components/layout/Footer';
 
 type BookingRow = {
   id: string;
@@ -124,6 +125,8 @@ export default function BookingsPage() {
           ))}
         </div>
       )}
+      
+      <Footer />
     </div>
   );
 }

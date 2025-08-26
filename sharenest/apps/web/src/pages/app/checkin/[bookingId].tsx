@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 import { PhotoUpload } from '../../../components/upload/PhotoUpload';
+import { Footer } from '../../../components/layout/Footer';
 
 export default function CheckinPage() {
   const router = useRouter();
@@ -60,7 +61,9 @@ export default function CheckinPage() {
         >
           チェックイン完了
         </button>
+</div>
       </div>
+      <Footer />
     </div>
   );
 }

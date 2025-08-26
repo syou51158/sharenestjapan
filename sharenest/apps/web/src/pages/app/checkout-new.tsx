@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { calculatePrice } from '../../lib/pricing';
+import { Footer } from '../../components/layout/Footer';
 
 type Vehicle = {
   id: string;
@@ -312,6 +313,8 @@ const CheckoutPage: NextPage = () => {
         {currentStep === 'details' && <DetailsStep />}
         {currentStep === 'payment' && <PaymentStep />}
       </div>
+      
+      <Footer />
     </div>
   );
 };

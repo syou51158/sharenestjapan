@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useAuth } from '../../components/auth/AuthProvider';
 import { NavigationHeader } from '../../components/NavigationHeader';
+import { Footer } from '../../components/layout/Footer';
 
 const VerificationRequiredPage: NextPage = () => {
   const { userProfile, updateUserProfile } = useAuth();
@@ -333,6 +334,8 @@ const VerificationRequiredPage: NextPage = () => {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

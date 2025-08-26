@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import { NavigationHeader } from '../../../components/NavigationHeader';
+import { Footer } from '../../../components/layout/Footer';
 
 interface OwnerStats {
   totalVehicles: number;
@@ -266,6 +267,8 @@ export default function OwnerDashboard() {
           </div>
         </div>
       </main>
+      
+      <Footer />
     </div>
   );
 }

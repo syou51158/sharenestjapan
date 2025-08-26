@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { getSbSchema } from '../../lib/supabase';
+import { NavigationHeader } from '../../components/NavigationHeader';
+import { Footer } from '../../components/layout/Footer';
 
 interface Vehicle {
   id: string;
@@ -78,15 +80,16 @@ const VehicleDetail: NextPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
         <Head>
           <title>車両詳細 | ShareNest</title>
           <link rel="icon" href="/favicon.ico" />
         </Head>
-        <div className="container mx-auto px-4 py-8">
+        <NavigationHeader />
+        <div className="container mx-auto px-4 py-8 pt-24">
           <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">車両情報を読み込んでいます...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto"></div>
+            <p className="mt-4 text-white/80">車両情報を読み込んでいます...</p>
           </div>
         </div>
       </div>
@@ -95,16 +98,17 @@ const VehicleDetail: NextPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
         <Head>
           <title>エラー | ShareNest</title>
           <link rel="icon" href="/favicon.ico" />
         </Head>
-        <div className="container mx-auto px-4 py-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">エラー</h1>
-            <p className="text-red-600 mb-4">{error}</p>
-            <Link href="/app/vehicles" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">
+        <NavigationHeader />
+        <div className="container mx-auto px-4 py-8 pt-24">
+          <div className="glass rounded-2xl p-8 text-center">
+            <h1 className="text-2xl font-bold text-white mb-4">エラー</h1>
+            <p className="text-white/80 mb-4">{error}</p>
+            <Link href="/app/vehicles" className="inline-block px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium rounded-lg hover:from-cyan-500 hover:to-blue-600 transition-all">
               車両一覧に戻る
             </Link>
           </div>
@@ -118,38 +122,20 @@ const VehicleDetail: NextPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
       <Head>
         <title>{`${vehicle.title} | ShareNest`}</title>
         <meta name="description" content={`${vehicle.brand} ${vehicle.model} - ${vehicle.title}`} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-blue-600">ShareNest</Link>
-          <nav>
-            <ul className="flex space-x-6">
-              <li>
-                <Link href="/app/vehicles" className="font-medium text-blue-600">
-                  車両を探す
-                </Link>
-              </li>
-              <li>
-                <Link href="/my-bookings" className="font-medium text-gray-600 hover:text-blue-600">
-                  マイブッキング
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
+      <NavigationHeader />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pt-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* 車両画像 */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-4">{vehicle.title}</h2>
+          <div className="card-3d glass rounded-3xl p-6">
+            <h2 className="text-2xl font-bold text-white mb-4">{vehicle.title}</h2>
             <div className="grid grid-cols-1 gap-4">
               {vehicle.photos && vehicle.photos.length > 0 ? (
                 vehicle.photos.map((photo, index) => (
@@ -164,68 +150,60 @@ const VehicleDetail: NextPage = () => {
                   />
                 ))
               ) : (
-                <div className="w-full h-64 bg-gray-300 flex items-center justify-center rounded-lg">
-                  <span className="text-gray-500">画像なし</span>
+                <div className="w-full h-64 bg-white/10 border border-white/10 flex items-center justify-center rounded-lg">
+                  <span className="text-white/70">画像なし</span>
                 </div>
               )}
             </div>
           </div>
 
           {/* 車両情報 */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-4">車両情報</h2>
-            
+          <div className="card-3d glass rounded-3xl p-6">
+            <h2 className="text-2xl font-bold text-white mb-4">車両情報</h2>
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-gray-700">メーカー</h3>
-                <p>{vehicle.brand}</p>
+                <h3 className="font-semibold text-white/80">メーカー</h3>
+                <p className="text-white">{vehicle.brand}</p>
               </div>
-              
               <div>
-                <h3 className="font-semibold text-gray-700">モデル</h3>
-                <p>{vehicle.model}</p>
+                <h3 className="font-semibold text-white/80">モデル</h3>
+                <p className="text-white">{vehicle.model}</p>
               </div>
-              
               <div>
-                <h3 className="font-semibold text-gray-700">年式</h3>
-                <p>{vehicle.year}年</p>
+                <h3 className="font-semibold text-white/80">年式</h3>
+                <p className="text-white">{vehicle.year}年</p>
               </div>
-              
               <div>
-                <h3 className="font-semibold text-gray-700">定員</h3>
-                <p>{vehicle.seats}人</p>
+                <h3 className="font-semibold text-white/80">定員</h3>
+                <p className="text-white">{vehicle.seats}人</p>
               </div>
-              
               <div>
-                <h3 className="font-semibold text-gray-700">パワートレイン</h3>
-                <p>{vehicle.powertrain}</p>
+                <h3 className="font-semibold text-white/80">パワートレイン</h3>
+                <p className="text-white">{vehicle.powertrain}</p>
               </div>
-              
               {vehicle.range_km && (
                 <div>
-                  <h3 className="font-semibold text-gray-700">航続距離</h3>
-                  <p>{vehicle.range_km}km</p>
+                  <h3 className="font-semibold text-white/80">航続距離</h3>
+                  <p className="text-white">{vehicle.range_km}km</p>
                 </div>
               )}
-              
               <div>
-                <h3 className="font-semibold text-gray-700">受取場所</h3>
-                <p>{vehicle.pickup_points.join(', ')}</p>
+                <h3 className="font-semibold text-white/80">受取場所</h3>
+                <p className="text-white">{vehicle.pickup_points.join(', ')}</p>
               </div>
-              
               <div>
-                <h3 className="font-semibold text-gray-700">利用規約</h3>
-                <ul className="list-disc list-inside space-y-1">
+                <h3 className="font-semibold text-white/80">利用規約</h3>
+                <ul className="list-disc list-inside space-y-1 text-white/90">
                   {vehicle.rules.map((rule, index) => (
                     <li key={index} className="text-sm">{rule}</li>
                   ))}
                 </ul>
               </div>
             </div>
-            
-            <div className="mt-6 border-t pt-6">
-              <h3 className="text-xl font-bold mb-4">料金</h3>
-              <div className="space-y-2">
+
+            <div className="mt-6 border-t border-white/10 pt-6">
+              <h3 className="text-xl font-bold text-white mb-4">料金</h3>
+              <div className="space-y-2 text-white">
                 {vehicle.price_hour > 0 && (
                   <div className="flex justify-between">
                     <span>1時間料金:</span>
@@ -247,23 +225,18 @@ const VehicleDetail: NextPage = () => {
                   <span className="font-bold">¥{vehicle.deposit}</span>
                 </div>
               </div>
-            </div>
-            
-            <div className="mt-6">
-              <button
-                onClick={handleBooking}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg"
-              >
-                この車両を予約する
-              </button>
+
+              <div className="mt-6 text-right">
+                <button onClick={handleBooking} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl hover:from-cyan-500 hover:to-blue-600 transition-all duration-300 transform hover:scale-105">
+                  予約に進む
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </main>
 
-      <footer className="container mx-auto p-4 text-center text-gray-500 mt-8">
-        © {new Date().getFullYear()} ShareNest
-      </footer>
+      <Footer />
     </div>
   );
 };

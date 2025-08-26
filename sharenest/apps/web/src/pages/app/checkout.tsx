@@ -7,6 +7,7 @@ import { calculatePrice } from '../../lib/pricing';
 import { getSbSchema } from '../../lib/supabase';
 import { NavigationHeader } from '../../components/NavigationHeader';
 import { useAuth } from '../../components/auth/AuthProvider';
+import { Footer } from '../../components/layout/Footer';
 
 interface Vehicle {
   id: string;
@@ -366,6 +367,8 @@ const CheckoutPage: NextPage = () => {
         {currentStep === 'details' && <DetailsStep />}
         {currentStep === 'payment' && <PaymentStep />}
       </div>
+      
+      <Footer />
     </div>
   );
 };

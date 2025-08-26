@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { NavigationHeader } from '../../../components/NavigationHeader';
+import { Footer } from '../../../components/layout/Footer';
 
 type VehicleRow = {
   id: string;
@@ -664,6 +665,8 @@ const VehiclesPage: NextPage = () => {
           )}
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };
