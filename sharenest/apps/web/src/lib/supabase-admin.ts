@@ -14,7 +14,8 @@ const fetchWithTimeout = (input: any, init: any = {}) => {
   return fetch(input, opts).finally(() => clearTimeout(timeoutId));
 };
 
-let supabaseAdminClient: SupabaseClient;
+// スキーマ 'sharenest' を明示して型不一致を解消
+let supabaseAdminClient: SupabaseClient<any, any, 'sharenest', any, any>;
 
 if (supabaseUrl && (serviceKey || anonKey)) {
   const keyToUse = serviceKey || anonKey!; // サービスキーがない場合は匿名鍵でフォールバック（RLS依存）

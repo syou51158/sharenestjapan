@@ -10,6 +10,7 @@ import { useAuth } from '../../components/auth/AuthProvider';
 
 interface Vehicle {
   id: string;
+  // Display fields (legacy naming used in this page)
   make: string;
   model: string;
   year: number;
@@ -18,6 +19,19 @@ interface Vehicle {
   daily_rate: number;
   address: string[];
   description: string;
+  // Pricing/lib compatibility fields
+  title: string;
+  brand: string;
+  seats: number;
+  powertrain: string;
+  range_km: number;
+  price_day: number;
+  price_hour: number;
+  price_per_km: number;
+  deposit: number;
+  pickup_points: string[];
+  photos: string[];
+  rules: string[];
 }
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_mock');
@@ -62,17 +76,31 @@ const CheckoutPage: NextPage = () => {
       const data = await response.json();
       console.log('Vehicle data:', data);
       
-      // データベース構造に合わせて変換
+      // データベース構造に合わせて変換（必要なフィールドをすべて保持）
       setVehicle({
         id: data.id,
+        // display fields
         make: data.brand,
         model: data.model,
         year: data.year,
         seat_count: data.seats,
         fuel_type: data.powertrain,
         daily_rate: data.price_day,
-        address: data.photos ? [data.photos] : [],
-        description: data.title || `${data.brand} ${data.model}`
+        address: data.pickup_points || [],
+        description: data.title || `${data.brand} ${data.model}`,
+        // pricing fields
+        title: data.title,
+        brand: data.brand,
+        seats: data.seats,
+        powertrain: data.powertrain,
+        range_km: data.range_km || 0,
+        price_day: data.price_day || 0,
+        price_hour: data.price_hour || 0,
+        price_per_km: data.price_per_km || 0,
+        deposit: data.deposit || 0,
+        pickup_points: data.pickup_points || [],
+        photos: Array.isArray(data.photos) ? data.photos : (data.photos ? [data.photos] : []),
+        rules: data.rules || [],
       });
     } catch (err) {
       console.error('Unexpected error:', err);

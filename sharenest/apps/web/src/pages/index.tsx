@@ -152,7 +152,7 @@ const Home: NextPage = () => {
                   <h3 className="text-xl font-bold text-white text-center mb-2">{v.brand} {v.model}</h3>
                   <p className="text-white/70 text-center mb-4">{v.seats}名乗り</p>
                   <div className="text-center mb-6">
-                    <span className="text-3xl font-black gradient-text">¥{v.price_day?.toLocaleString() || '0'}</span>
+                    <span className="text-3xl font-black gradient-text">¥{v.price_day.toLocaleString()}</span>
                     <span className="text-white/60 text-sm">/日〜</span>
                   </div>
                   <Link 

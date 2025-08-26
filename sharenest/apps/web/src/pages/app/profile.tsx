@@ -41,7 +41,7 @@ type BookingHistory = {
 
 const ProfilePage: NextPage = () => {
   const { user, userProfile, updateUserProfile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'settings'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'owner' | 'settings'>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);

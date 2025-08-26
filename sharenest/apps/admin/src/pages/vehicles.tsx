@@ -20,6 +20,7 @@ interface Vehicle {
   rules: string[];
   created_at: string;
   updated_at: string;
+  status?: 'available' | 'rented' | 'maintenance';
 }
 
 export default function AdminVehiclesPage() {

@@ -172,7 +172,7 @@ async function handleDelete(
 
     const { error } = await supabaseAdmin
       .schema('sharenest')
-      .from('vehicles')
+      .from('carsharing_vehicles')
       .delete()
       .eq('id', id);
 

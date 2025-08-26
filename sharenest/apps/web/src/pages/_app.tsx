@@ -8,22 +8,46 @@ import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { PageTransition } from '../components/PageTransition';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { useEffect } from 'react';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const path = router.pathname || '';
-  const isAppRoute = path.startsWith('/app');
-  const isAuthPage = path === '/app/login' || path === '/app/register';
+
+  // 開発環境でのみService Workerとキャッシュを自動的に解除
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // Service Workerの登録解除
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister();
+          });
+        });
+      }
+
+      // キャッシュのクリア
+      if ('caches' in window) {
+        caches.keys().then((cacheNames) => {
+          cacheNames.forEach((cacheName) => {
+            caches.delete(cacheName);
+          });
+        });
+      }
+    }
+  }, []);
+
+  // 認証が不要なパスを定義
+  const publicPaths = ['/auth/login', '/auth/register', '/auth/forgot-password'];
+  const isAppRoute = router.pathname.startsWith('/app');
+  const isAuthPage = publicPaths.includes(router.pathname);
 
   return (
     <AuthProvider>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#2563eb" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <meta name="theme-color" content="#000000" />
       </Head>
       <DefaultSeo {...defaultSEO} />
       <PageTransition>

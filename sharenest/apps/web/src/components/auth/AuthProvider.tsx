@@ -12,8 +12,22 @@ type UserProfile = {
   role: UserRole;
   kyc_status: KYCStatus;
   is_verified: boolean;
+  // Common optional fields used across app pages
   phone?: string;
   avatar?: string;
+  // Additional profile fields (optional to match DB columns and UI usage)
+  license_number?: string;
+  license_expiry?: string;
+  address?: string;
+  birth_date?: string;
+  emergency_contact?: string;
+  emergency_phone?: string;
+  is_owner?: boolean;
+  member_since?: string;
+  total_bookings?: number;
+  total_spent?: number;
+  rating?: number;
+  reviews_count?: number;
   created_at: string;
   updated_at: string;
 };

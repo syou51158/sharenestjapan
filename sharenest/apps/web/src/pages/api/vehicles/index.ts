@@ -57,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const { data: vehicle, error } = await supabaseAdmin
         .schema('sharenest')
-        .from('vehicles')
+        .from('carsharing_vehicles')
         .insert({
           title: vehicleData.title,
           brand: vehicleData.brand,
