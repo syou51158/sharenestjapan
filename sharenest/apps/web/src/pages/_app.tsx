@@ -37,7 +37,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, []);
 
   // 認証が不要なパスを定義
-  const publicPaths = ['/auth/login', '/auth/register', '/auth/forgot-password'];
+  const publicPaths = ['/auth/login', '/auth/register', '/auth/forgot-password', '/app/login', '/app/register'];
   const isAppRoute = router.pathname.startsWith('/app');
   const isAuthPage = publicPaths.includes(router.pathname);
 

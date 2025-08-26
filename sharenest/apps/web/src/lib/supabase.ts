@@ -65,4 +65,47 @@ export function getSbSchema() {
   return getSupabase();
 }
 
+// ストレージ専用のクライアント（Content-Typeヘッダーを設定しない）
+export function getSupabaseForStorage(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!url || !anon) {
+    console.warn('Supabase環境変数が未設定です。ダミークライアントを返します。');
+    return (createClient('https://dummy.supabase.co', 'dummy-key', {
+      db: { schema: 'sharenest' },
+      global: {
+        fetch: fetchWithTimeout,
+        headers: {
+          'Accept': 'application/json',
+          'Prefer': 'return=representation',
+        },
+      },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    }) as unknown) as SupabaseClient;
+  }
+  
+  // ストレージ用：Content-Typeヘッダーを除外
+  return (createClient(url, anon, {
+    db: { schema: 'sharenest' },
+    global: {
+      fetch: fetchWithTimeout,
+      headers: {
+        'Accept': 'application/json',
+        'Prefer': 'return=representation',
+        // Content-Typeヘッダーを意図的に除外（ブラウザが自動設定）
+      },
+    },
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      flowType: 'pkce',
+      detectSessionInUrl: true,
+    },
+  }) as unknown) as SupabaseClient;
+}
+
 

@@ -75,9 +75,12 @@ const ProfilePage: NextPage = () => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
+    console.log('アバター変更開始:', { fileName: file.name, fileSize: file.size, userId: user.id });
+    
     // ファイル検証
     const validation = validateImageFile(file);
     if (!validation.isValid) {
+      console.error('ファイル検証エラー:', validation.error);
       alert(validation.error);
       return;
     }
@@ -87,27 +90,46 @@ const ProfilePage: NextPage = () => {
     try {
       // 古いアバターを削除（存在する場合）
       if (currentProfile.avatar) {
+        console.log('古いアバター削除中:', currentProfile.avatar);
         await deleteAvatar(currentProfile.avatar);
       }
 
       // 新しいアバターをアップロード
+      console.log('新しいアバターアップロード中...');
       const avatarUrl = await uploadAvatar(file, user.id);
+      console.log('アバターアップロード完了:', avatarUrl);
       
       // プレビューを表示
       setAvatarPreview(avatarUrl);
       
-      // プロフィールを更新
-      const updatedProfile = { ...currentProfile, avatar: avatarUrl };
-      setLocalProfile(updatedProfile);
+      // ローカル状態を更新
+      setLocalProfile(prev => ({ ...prev, avatar: avatarUrl }));
       
-      if (updateUserProfile) {
-        await updateUserProfile(updatedProfile);
+      // データベースのアバターのみを更新（プロフィール全体ではなく）
+      if (updateUserProfile && userProfile) {
+        console.log('アバターのみ更新中...');
+        await updateUserProfile({ avatar: avatarUrl });
+        console.log('アバター更新完了');
+      } else if (!userProfile) {
+        console.log('⚠️ プロフィールが未作成のため、アバターURLのみローカルに保存');
+        // プロフィールが作成されるまで待機してから再試行
+        setTimeout(async () => {
+          if (userProfile && updateUserProfile) {
+            try {
+              await updateUserProfile({ avatar: avatarUrl });
+              console.log('✅ 遅延アバター更新完了');
+            } catch (retryError) {
+              console.error('❌ 遅延アバター更新エラー:', retryError);
+            }
+          }
+        }, 2000);
       }
       
       alert('アバターが更新されました。');
     } catch (error) {
       console.error('アバターアップロードエラー:', error);
-      alert('アバターのアップロードに失敗しました。');
+      const errorMessage = error instanceof Error ? error.message : 'アバターのアップロードに失敗しました。';
+      alert(`エラー: ${errorMessage}`);
     } finally {
       setIsUploading(false);
     }
@@ -124,13 +146,13 @@ const ProfilePage: NextPage = () => {
         await deleteAvatar(currentProfile.avatar);
       }
       
-      // プレビューとプロフィールをクリア
+      // プレビューとローカル状態をクリア
       setAvatarPreview(null);
-      const updatedProfile = { ...currentProfile, avatar: '' };
-      setLocalProfile(updatedProfile);
+      setLocalProfile(prev => ({ ...prev, avatar: '' }));
       
-      if (updateUserProfile) {
-        await updateUserProfile(updatedProfile);
+      // データベースのアバターのみをクリア
+      if (updateUserProfile && userProfile) {
+        await updateUserProfile({ avatar: '' });
       }
       
       alert('アバターが削除されました。');
@@ -251,9 +273,15 @@ const ProfilePage: NextPage = () => {
                 </div>
               ) : (
                 <img
-                  src={avatarPreview || currentProfile.avatar || '/api/placeholder/150/150'}
+                  src={avatarPreview || currentProfile.avatar || user?.user_metadata?.avatar_url || '/api/placeholder/150/150'}
                   alt="プロフィール画像"
                   className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== '/api/placeholder/150/150') {
+                      target.src = '/api/placeholder/150/150';
+                    }
+                  }}
                 />
               )}
               <input

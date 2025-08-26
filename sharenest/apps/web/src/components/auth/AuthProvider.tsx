@@ -103,8 +103,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 認証状態の変更を監視
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 認証状態変更:', event, session?.user?.id || '未ログイン');
+      console.log('📍 現在のURL:', window.location.href);
+      console.log('🔗 セッション詳細:', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        hasAccessToken: !!session?.access_token,
+        userEmail: session?.user?.email
+      });
       
-      if (!isMounted) return;
+      if (!isMounted) {
+        console.log('⚠️ コンポーネントがアンマウント済み - 処理をスキップ');
+        return;
+      }
       
       // 状態を即座に更新
       setUser(session?.user ?? null);
@@ -118,8 +128,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (session?.user) {
+        console.log('👤 ユーザーセッション確認済み - プロフィール処理開始');
+        
         // 新規ユーザーの場合、プロフィールを作成
         if (event === 'SIGNED_IN') {
+          console.log('🆕 新規ログイン検知 - 既存ユーザーチェック');
           const { data: existingUser } = await supabase
             .schema('sharenest')
             .from('users')
@@ -128,19 +141,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .single();
           
           if (!existingUser) {
+            console.log('🆕 新規ユーザー - プロフィール作成開始');
             try {
               await createUserProfile(session.user);
             } catch (error) {
-              console.error('Error creating user profile:', error);
+              console.error('❌ プロフィール作成エラー:', error);
             }
+          } else {
+            console.log('✅ 既存ユーザー確認済み');
           }
         }
         
         // プロフィール取得をバックグラウンドで実行
         fetchUserProfile(session.user.id).catch((err) => {
-          console.error('Profile fetch failed during auth state change:', err);
+          console.error('❌ 認証状態変更時のプロフィール取得失敗:', err);
         });
       } else {
+        console.log('❌ セッションにユーザー情報なし');
         setUserProfile(null);
       }
     });
@@ -155,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.log('📊 プロフィールエラー:', (error as any).code, (error as any).message);
@@ -178,9 +195,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('✅ プロフィール取得成功:', (data as any)?.name);
 
-      // Google認証の場合、プロフィール画像を自動更新
-      if (user?.user_metadata?.avatar_url && (!data!.avatar || data!.avatar !== user.user_metadata.avatar_url)) {
+      // Google認証の場合、プロフィール画像を自動更新（ただし、アバターが未設定(null)の場合のみ）
+      if (user?.user_metadata?.avatar_url && data?.avatar === null) {
         try {
+          console.log('🖼️ Googleアバターを初期設定:', user.user_metadata.avatar_url);
           const { error: updateError } = await supabase
             .schema('sharenest')
             .from('users')
@@ -212,7 +230,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    console.log('🔐 Googleログイン開始');
+    console.log('🌐 リダイレクトURL:', `${window.location.origin}/app/vehicles`);
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         queryParams: {
@@ -221,7 +242,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         redirectTo: `${window.location.origin}/app/vehicles`
       }
     });
-    if (error) throw error;
+    
+    console.log('📊 Googleログイン結果:', { data, error });
+    
+    if (error) {
+      console.error('❌ Googleログインエラー:', error);
+      throw error;
+    }
+    
+    console.log('✅ Googleログイン成功 - リダイレクト中...');
   };
 
   const signUp = async (email: string, password: string, name: string) => {
@@ -269,7 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .from('users')
           .insert([newProfile])
           .select()
-          .single(),
+          .maybeSingle(),
         timeoutPromise
       ]) as any;
 

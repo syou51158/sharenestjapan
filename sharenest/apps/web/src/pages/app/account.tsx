@@ -113,11 +113,25 @@ const AccountPage: NextPage = () => {
       const avatarUrl = await uploadAvatar(file, user.id);
       setAvatarPreview(avatarUrl);
       
-      const updatedProfile = { ...currentProfile, avatar: avatarUrl };
-      setLocalProfile(updatedProfile);
+      // ローカル状態を更新
+      setLocalProfile(prev => ({ ...prev, avatar: avatarUrl }));
       
-      if (updateUserProfile) {
-        await updateUserProfile(updatedProfile);
+      // データベースのアバターのみを更新（プロフィール全体ではなく）
+      if (updateUserProfile && userProfile) {
+        await updateUserProfile({ avatar: avatarUrl });
+      } else if (!userProfile) {
+        console.log('⚠️ プロフィールが未作成のため、アバターURLのみローカルに保存');
+        // プロフィールが作成されるまで待機してから再試行
+        setTimeout(async () => {
+          if (userProfile && updateUserProfile) {
+            try {
+              await updateUserProfile({ avatar: avatarUrl });
+              console.log('✅ 遅延アバター更新完了');
+            } catch (retryError) {
+              console.error('❌ 遅延アバター更新エラー:', retryError);
+            }
+          }
+        }, 2000);
       }
       
       alert('アバターが更新されました。');
@@ -141,11 +155,13 @@ const AccountPage: NextPage = () => {
       }
       
       setAvatarPreview(null);
-      const updatedProfile = { ...currentProfile, avatar: '' };
-      setLocalProfile(updatedProfile);
+      setLocalProfile(prev => ({ ...prev, avatar: '' }));
       
-      if (updateUserProfile) {
-        await updateUserProfile(updatedProfile);
+      // データベースのアバターのみをクリア
+      if (updateUserProfile && userProfile) {
+        await updateUserProfile({ avatar: '' });
+      } else if (!userProfile) {
+        console.log('⚠️ プロフィールが未作成のため、アバター削除はローカルのみ');
       }
       
       alert('アバターが削除されました。');
@@ -164,7 +180,12 @@ const AccountPage: NextPage = () => {
 
   // プロフィール保存処理
   const handleSaveProfile = async () => {
-    if (!updateUserProfile) return;
+    if (!updateUserProfile || !userProfile) {
+      if (!userProfile) {
+        alert('プロフィールが作成されていません。しばらく待ってから再試行してください。');
+      }
+      return;
+    }
     
     setIsLoading(true);
     
@@ -278,9 +299,9 @@ const AccountPage: NextPage = () => {
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 mb-8">
               <div className="flex items-center space-x-6">
                 <div className="relative">
-                  {avatarPreview || currentProfile.avatar ? (
+                  {avatarPreview || currentProfile.avatar || user?.user_metadata?.avatar_url ? (
                     <img
-                      src={avatarPreview || currentProfile.avatar}
+                      src={avatarPreview || currentProfile.avatar || user?.user_metadata?.avatar_url}
                       alt="プロフィール画像"
                       className="w-24 h-24 rounded-full object-cover border-4 border-white/20"
                     />
