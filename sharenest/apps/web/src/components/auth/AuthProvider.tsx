@@ -46,6 +46,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
   refreshUserProfile: () => Promise<void>;
+  updateUserStats: () => Promise<void>;
   hasPermission: (requiredRole: UserRole) => boolean;
 };
 
@@ -355,6 +356,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchUserProfile(user.id);
   };
 
+  const calculateUserStats = async (userId: string) => {
+    try {
+      console.log('📊 ユーザー統計情報計算開始:', userId);
+      
+      // 予約数と総支払額を計算
+      const { data: bookings, error: bookingsError } = await supabase
+        .schema('sharenest')
+        .from('bookings')
+        .select('total_amount, status')
+        .eq('user_id', userId);
+      
+      if (bookingsError) {
+        console.error('❌ 予約データ取得エラー:', bookingsError);
+        return null;
+      }
+      
+      // レビュー数と平均評価を計算
+      const { data: reviews, error: reviewsError } = await supabase
+        .schema('sharenest')
+        .from('reviews')
+        .select('rating')
+        .eq('user_id', userId);
+      
+      if (reviewsError) {
+        console.error('❌ レビューデータ取得エラー:', reviewsError);
+        return null;
+      }
+      
+      const totalBookings = bookings?.length || 0;
+      const totalSpent = bookings?.reduce((sum, booking) => sum + (booking.total_amount || 0), 0) || 0;
+      const reviewsCount = reviews?.length || 0;
+      const averageRating = reviewsCount > 0 
+        ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviewsCount 
+        : 0;
+      
+      const stats = {
+        total_bookings: totalBookings,
+        total_spent: totalSpent,
+        rating: Math.round(averageRating * 10) / 10, // 小数点第1位まで
+        reviews_count: reviewsCount
+      };
+      
+      console.log('✅ 統計情報計算完了:', stats);
+      
+      // データベースに統計情報を更新
+      const { error: updateError } = await supabase
+        .schema('sharenest')
+        .from('users')
+        .update({
+          ...stats,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+      
+      if (updateError) {
+        console.error('❌ 統計情報更新エラー:', updateError);
+        return stats; // 計算結果は返す
+      }
+      
+      console.log('✅ 統計情報データベース更新完了');
+      return stats;
+      
+    } catch (error) {
+      console.error('❌ 統計情報計算エラー:', error);
+      return null;
+    }
+  };
+
+  const updateUserStats = async () => {
+    if (!user) return;
+    const stats = await calculateUserStats(user.id);
+    if (stats && userProfile) {
+      setUserProfile(prev => prev ? { ...prev, ...stats } : null);
+    }
+  };
+
   const hasPermission = (requiredRole: UserRole): boolean => {
     if (!userProfile) return false;
     
@@ -386,6 +463,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       updateUserProfile,
       refreshUserProfile,
+      updateUserStats,
       hasPermission
     }}>
       {children}

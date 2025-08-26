@@ -6,6 +6,7 @@ import { useAuth } from '../../components/auth/AuthProvider';
 import { NavigationHeader } from '../../components/NavigationHeader'
 import { Footer } from '../../components/layout/Footer'
 
+
 type UserProfile = {
   id: string;
   name: string;
@@ -41,7 +42,7 @@ type BookingHistory = {
 };
 
 const ProfilePage: NextPage = () => {
-  const { user, userProfile, updateUserProfile } = useAuth();
+  const { user, userProfile, updateUserProfile, updateUserStats } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'owner' | 'settings'>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -294,7 +295,7 @@ const ProfilePage: NextPage = () => {
             </div>
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-white">{currentProfile.name || 'ユーザー名'}</h2>
-              <p className="text-white/70">{currentProfile.email || user?.email}</p>
+              <p className="text-white/70">{String(currentProfile.email || user?.email || '')}</p>
               <div className="flex items-center space-x-4 mt-2">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   currentProfile.is_verified ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
@@ -412,7 +413,7 @@ const ProfilePage: NextPage = () => {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
                         ) : (
-                          <p className="text-white py-2">{currentProfile.name || '未設定'}</p>
+                          <p className="text-white py-2">{String(currentProfile.name || '未設定')}</p>
                         )}
                       </div>
 
@@ -426,7 +427,7 @@ const ProfilePage: NextPage = () => {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
                         ) : (
-                          <p className="text-white py-2">{currentProfile.phone || '未設定'}</p>
+                          <p className="text-white py-2">{String(currentProfile.phone || '未設定')}</p>
                         )}
                       </div>
                     </div>
@@ -452,7 +453,7 @@ const ProfilePage: NextPage = () => {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
                         ) : (
-                          <p className="text-white py-2">{currentProfile.license_number || '未設定'}</p>
+                          <p className="text-white py-2">{String(currentProfile.license_number || '未設定')}</p>
                         )}
                       </div>
 
@@ -466,7 +467,7 @@ const ProfilePage: NextPage = () => {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
                         ) : (
-                          <p className="text-white py-2">{currentProfile.license_expiry || '未設定'}</p>
+                          <p className="text-white py-2">{String(currentProfile.license_expiry || '未設定')}</p>
                         )}
                       </div>
                     </div>
@@ -493,7 +494,7 @@ const ProfilePage: NextPage = () => {
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                       />
                     ) : (
-                      <p className="text-white py-2">{currentProfile.address || '未設定'}</p>
+                      <p className="text-white py-2">{String(currentProfile.address || '未設定')}</p>
                     )}
                   </div>
                 </div>
@@ -518,8 +519,8 @@ const ProfilePage: NextPage = () => {
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         />
                       ) : (
-                        <p className="text-white py-2">{currentProfile.emergency_contact || '未設定'}</p>
-                      )}
+                          <p className="text-white py-2">{String(currentProfile.emergency_contact || '未設定')}</p>
+                        )}
                     </div>
 
                     <div>
@@ -532,35 +533,53 @@ const ProfilePage: NextPage = () => {
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         />
                       ) : (
-                        <p className="text-white py-2">{currentProfile.emergency_phone || '未設定'}</p>
-                      )}
+                          <p className="text-white py-2">{String(currentProfile.emergency_phone || '未設定')}</p>
+                        )}
                     </div>
                   </div>
                 </div>
 
                 {/* 統計情報 */}
                 <div className="glass rounded-xl p-6 mt-8">
-                  <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    利用統計
-                  </h3>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold text-white flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      利用統計
+                    </h3>
+                    <button
+                      onClick={async () => {
+                        if (updateUserStats) {
+                          try {
+                            await updateUserStats();
+                            alert('統計情報を更新しました。');
+                          } catch (error) {
+                            console.error('統計情報更新エラー:', error);
+                            alert('統計情報の更新に失敗しました。');
+                          }
+                        }
+                      }}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 text-sm"
+                    >
+                      更新
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div className="text-center glass rounded-lg p-4">
-                      <div className="text-3xl font-bold text-blue-600 mb-1">{currentProfile.total_bookings || 0}</div>
+                      <div className="text-3xl font-bold text-blue-600 mb-1">{Number(currentProfile.total_bookings) || 0}</div>
                       <div className="text-sm text-white/70">総予約数</div>
                     </div>
                     <div className="text-center glass rounded-lg p-4">
-                      <div className="text-3xl font-bold text-green-600 mb-1">¥{(currentProfile.total_spent || 0).toLocaleString()}</div>
+                      <div className="text-3xl font-bold text-green-600 mb-1">¥{Number(currentProfile.total_spent || 0).toLocaleString()}</div>
                       <div className="text-sm text-white/70">総利用金額</div>
                     </div>
                     <div className="text-center glass rounded-lg p-4">
-                      <div className="text-3xl font-bold text-yellow-600 mb-1">{currentProfile.rating || 0}</div>
+                      <div className="text-3xl font-bold text-yellow-600 mb-1">{Number(currentProfile.rating) || 0}</div>
                       <div className="text-sm text-white/70">平均評価</div>
                     </div>
                     <div className="text-center glass rounded-lg p-4">
-                      <div className="text-3xl font-bold text-purple-600 mb-1">{currentProfile.reviews_count || 0}</div>
+                      <div className="text-3xl font-bold text-purple-600 mb-1">{Number(currentProfile.reviews_count) || 0}</div>
                       <div className="text-sm text-white/70">レビュー数</div>
                     </div>
                   </div>
@@ -583,22 +602,22 @@ const ProfilePage: NextPage = () => {
                           {booking.start_date} 〜 {booking.end_date}
                         </p>
                         <p className="text-lg font-bold text-white mt-2">
-                          ¥{booking.total_amount.toLocaleString()}
+                          ¥{Number(booking.total_amount || 0).toLocaleString()}
                         </p>
                         {booking.rating && (
                           <div className="flex items-center mt-2">
                             <div className="flex text-yellow-400">
                               {[...Array(5)].map((_, i) => (
-                                <span key={i} className={i < booking.rating! ? 'text-yellow-400' : 'text-gray-300'}>
+                                <span key={i} className={i < (Number(booking.rating) || 0) ? 'text-yellow-400' : 'text-gray-300'}>
                                   ★
                                 </span>
                               ))}
                             </div>
-                            <span className="ml-2 text-sm text-white/70">({booking.rating})</span>
+                            <span className="ml-2 text-sm text-white/70">({Number(booking.rating) || 0})</span>
                           </div>
                         )}
                         {booking.review && (
-                          <p className="text-sm text-white/70 mt-2 italic">"{booking.review}"</p>
+                          <p className="text-sm text-white/70 mt-2 italic">"{String(booking.review)}"</p>
                         )}
                       </div>
                       <div className="ml-4">
