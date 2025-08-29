@@ -17,6 +17,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  basePath: process.env.NODE_ENV === 'production' ? '/sharenestjapan' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/sharenestjapan/' : '',
   // ページ遷移時のローディング問題を解決するための設定
   experimental: {
     optimizeCss: false,
