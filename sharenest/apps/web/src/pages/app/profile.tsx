@@ -1,10 +1,16 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
+import toast from 'react-hot-toast';
 import { useState, useRef, useEffect } from 'react';
 import { uploadAvatar, deleteAvatar, validateImageFile } from '../../lib/storage';
 import { useAuth } from '../../components/auth/AuthProvider';
 import { NavigationHeader } from '../../components/NavigationHeader'
 import { Footer } from '../../components/layout/Footer'
+import AuthStatusManager from '../../components/profile/AuthStatusManager';
+import PersonalInfoSecurity from '../../components/profile/PersonalInfoSecurity';
+
+
+
 
 
 type UserProfile = {
@@ -42,8 +48,8 @@ type BookingHistory = {
 };
 
 const ProfilePage: NextPage = () => {
-  const { user, userProfile, updateUserProfile, updateUserStats } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'owner' | 'settings'>('profile');
+  const { user, userProfile, updateUserProfile, updateUserStats, profileLoading, profileError, refreshUserProfile, createProfile, deleteUserProfile } = useAuth();
+  const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'owner' | 'settings' | 'auth' | 'security' | 'verification'>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -72,9 +78,19 @@ const ProfilePage: NextPage = () => {
   // 現在のプロフィール（認証されたプロフィールまたはローカル状態）
   const currentProfile = userProfile || localProfile;
 
+  // アイコン変更ボタンクリック時のチェック
+  const handleAvatarButtonClick = () => {
+    if (!userProfile) {
+      toast.error('プロフィールがまだ作成されていません。まずプロフィールの完成からお願いします。');
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
+    if (isUploading) return;
 
     console.log('アバター変更開始:', { fileName: file.name, fileSize: file.size, userId: user.id });
     
@@ -82,7 +98,7 @@ const ProfilePage: NextPage = () => {
     const validation = validateImageFile(file);
     if (!validation.isValid) {
       console.error('ファイル検証エラー:', validation.error);
-      alert(validation.error);
+      toast.error(validation.error || '画像ファイルが無効です');
       return;
     }
 
@@ -126,11 +142,11 @@ const ProfilePage: NextPage = () => {
         }, 2000);
       }
       
-      alert('アバターが更新されました。');
+      toast.success('アバターを更新しました');
     } catch (error) {
       console.error('アバターアップロードエラー:', error);
       const errorMessage = error instanceof Error ? error.message : 'アバターのアップロードに失敗しました。';
-      alert(`エラー: ${errorMessage}`);
+      toast.error(`エラー: ${errorMessage}`);
     } finally {
       setIsUploading(false);
     }
@@ -138,6 +154,13 @@ const ProfilePage: NextPage = () => {
 
   const handleRemoveAvatar = async () => {
     if (!user) return;
+    if (isUploading) return;
+    
+    // プロフィール未作成チェック
+    if (!userProfile) {
+      toast.error('プロフィールがまだ作成されていません。まずプロフィールの完成からお願いします。');
+      return;
+    }
     
     setIsUploading(true);
     
@@ -156,10 +179,10 @@ const ProfilePage: NextPage = () => {
         await updateUserProfile({ avatar: '' });
       }
       
-      alert('アバターが削除されました。');
+      toast.success('アバターを削除しました');
     } catch (error) {
       console.error('アバター削除エラー:', error);
-      alert('アバターの削除に失敗しました。');
+      toast.error('アバターの削除に失敗しました。');
     } finally {
       setIsUploading(false);
     }
@@ -169,28 +192,37 @@ const ProfilePage: NextPage = () => {
     setLocalProfile(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleDriverLicenseUpdate = (licenseData: any) => {
+    setLocalProfile(prev => ({ ...prev, driver_license: licenseData }));
+  };
+
   const handleSaveProfile = async () => {
     if (!updateUserProfile) return;
+    if (isUploading) return;
     
     setIsUploading(true);
     
     try {
       await updateUserProfile({
-        name: currentProfile.name,
-        phone: currentProfile.phone,
-        avatar: currentProfile.avatar,
-        license_number: currentProfile.license_number,
-        license_expiry: currentProfile.license_expiry,
-        address: currentProfile.address,
-        emergency_contact: currentProfile.emergency_contact,
-        emergency_phone: currentProfile.emergency_phone
+        name: localProfile.name ?? userProfile?.name ?? '',
+        phone: localProfile.phone ?? userProfile?.phone ?? '',
+        avatar: localProfile.avatar ?? userProfile?.avatar ?? '',
+        license_number: localProfile.license_number ?? userProfile?.license_number ?? '',
+        license_expiry: (localProfile.license_expiry ?? userProfile?.license_expiry ?? '') || null,
+        address: localProfile.address ?? userProfile?.address ?? '',
+        emergency_contact: localProfile.emergency_contact ?? userProfile?.emergency_contact ?? '',
+        emergency_phone: localProfile.emergency_phone ?? userProfile?.emergency_phone ?? '',
+        // driver_license がオブジェクトの場合のみ保存（後方互換性維持）
+        ...(typeof (localProfile as any).driver_license === 'object' && (localProfile as any).driver_license
+          ? { driver_license: (localProfile as any).driver_license }
+          : {})
       });
       
       setIsEditing(false);
-      alert('プロフィールが更新されました。');
+      toast.success('プロフィールを更新しました');
     } catch (error) {
       console.error('プロフィール更新エラー:', error);
-      alert('プロフィールの更新に失敗しました。');
+      toast.error('プロフィールの更新に失敗しました');
     } finally {
       setIsUploading(false);
     }
@@ -263,6 +295,65 @@ const ProfilePage: NextPage = () => {
           <h1 className="text-3xl font-bold text-white">マイアカウント</h1>
           <p className="mt-2 text-white/70">アカウント情報の管理とサービス設定</p>
         </div>
+
+        {/* プロフィール状態バナー */}
+        {profileLoading && (
+          <div className="mb-6 rounded-lg bg-blue-500/10 border border-blue-400/30 text-blue-100 px-4 py-3">
+            プロフィールを読み込んでいます...
+          </div>
+        )}
+        {!profileLoading && profileError && (
+          <div className="mb-6 rounded-lg bg-red-500/10 border border-red-400/30 text-red-100 px-4 py-3 flex items-center justify-between">
+            <span>プロフィールの取得に失敗しました。{String(profileError)}</span>
+            <button
+              disabled={isUploading}
+              onClick={async () => {
+                if (!refreshUserProfile) return;
+                try {
+                  setIsUploading(true);
+                  await refreshUserProfile();
+                  toast.success('プロフィールを再取得しました');
+                } catch (e) {
+                  console.error('プロフィール再取得エラー:', e);
+                  toast.error('プロフィールの再取得に失敗しました');
+                } finally {
+                  setIsUploading(false);
+                }
+              }}
+              className={`ml-4 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                isUploading ? 'bg-gray-400/50 text-gray-200 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700'
+              }`}
+            >
+              {isUploading ? '再試行中...' : '再試行'}
+            </button>
+          </div>
+        )}
+        {!profileLoading && !profileError && !userProfile && (
+          <div className="mb-6 rounded-lg bg-yellow-500/10 border border-yellow-400/30 text-yellow-100 px-4 py-3 flex items-center justify-between">
+            <span>お客様のプロフィール情報がまだご登録されていないようです。ShareNestをより快適にご利用いただくため、プロフィールの作成をお願いいたします。</span>
+            <button
+              disabled={isUploading}
+              onClick={async () => {
+                if (!createProfile) return;
+                try {
+                  setIsUploading(true);
+                  await createProfile();
+                  toast.success('プロフィールを作成しました');
+                } catch (e) {
+                  console.error('プロフィール作成エラー:', e);
+                  toast.error('プロフィールの作成に失敗しました');
+                } finally {
+                  setIsUploading(false);
+                }
+              }}
+              className={`ml-4 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                isUploading ? 'bg-gray-400/50 text-gray-200 cursor-not-allowed' : 'bg-yellow-600 text-white hover:bg-yellow-700'
+              }`}
+            >
+              {isUploading ? '作成中...' : 'Google情報で作成'}
+            </button>
+          </div>
+        )}
         
         {/* プロフィールヘッダー */}
         <div className="glass rounded-3xl p-6 mb-6">
@@ -311,7 +402,7 @@ const ProfilePage: NextPage = () => {
             </div>
             <div className="flex flex-col space-y-2">
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={handleAvatarButtonClick}
                 disabled={isUploading}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                   isUploading 
@@ -344,6 +435,11 @@ const ProfilePage: NextPage = () => {
             <nav className="flex space-x-0">
               {[
                 { key: 'profile', label: 'プロフィール', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+                { key: 'auth', label: '認証管理', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+                { key: 'security', label: 'セキュリティ', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
+
+
+
                 { key: 'bookings', label: '利用履歴', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
                 { key: 'owner', label: 'オーナー登録', icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z' },
                 { key: 'settings', label: '設定', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' }
@@ -408,7 +504,7 @@ const ProfilePage: NextPage = () => {
                         {isEditing ? (
                           <input
                             type="text"
-                            value={currentProfile.name || ''}
+                            value={localProfile.name ?? ''}
                             onChange={(e) => handleProfileUpdate('name', e.target.value)}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
@@ -422,7 +518,7 @@ const ProfilePage: NextPage = () => {
                         {isEditing ? (
                           <input
                             type="tel"
-                            value={currentProfile.phone || ''}
+                            value={localProfile.phone ?? ''}
                             onChange={(e) => handleProfileUpdate('phone', e.target.value)}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
@@ -448,8 +544,24 @@ const ProfilePage: NextPage = () => {
                         {isEditing ? (
                           <input
                             type="text"
-                            value={currentProfile.license_number || ''}
-                            onChange={(e) => handleProfileUpdate('license_number', e.target.value)}
+                            value={
+                              typeof (localProfile as any).driver_license === 'object'
+                                ? (localProfile as any).driver_license?.license_no || ''
+                                : localProfile.license_number ?? ''
+                            }
+                            onChange={(e) => {
+                              if (typeof (localProfile as any).driver_license === 'object') {
+                                const current = (localProfile as any).driver_license || {};
+                                handleDriverLicenseUpdate({ ...current, license_no: e.target.value });
+                              } else {
+                                handleProfileUpdate('license_number', e.target.value);
+                              }
+                            }}
+                            disabled={
+                              (typeof (localProfile as any).driver_license === 'object' && (localProfile as any).driver_license?.status === 'verified') && !isEditing
+                                ? true
+                                : !isEditing
+                            }
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
                         ) : (
@@ -462,13 +574,48 @@ const ProfilePage: NextPage = () => {
                         {isEditing ? (
                           <input
                             type="date"
-                            value={currentProfile.license_expiry || ''}
-                            onChange={(e) => handleProfileUpdate('license_expiry', e.target.value)}
+                            value={
+                              typeof (localProfile as any).driver_license === 'object'
+                                ? (localProfile as any).driver_license?.expiry_date || ''
+                                : localProfile.license_expiry ?? ''
+                            }
+                            onChange={(e) => {
+                              if (typeof (localProfile as any).driver_license === 'object') {
+                                const current = (localProfile as any).driver_license || {};
+                                handleDriverLicenseUpdate({ ...current, expiry_date: e.target.value });
+                              } else {
+                                handleProfileUpdate('license_expiry', e.target.value);
+                              }
+                            }}
+                            disabled={
+                              (typeof (localProfile as any).driver_license === 'object' && (localProfile as any).driver_license?.status === 'verified') && !isEditing
+                                ? true
+                                : !isEditing
+                            }
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
                         ) : (
                           <p className="text-white py-2">{String(currentProfile.license_expiry || '未設定')}</p>
                         )}
+                      </div>
+
+                      {/* ステータスは閲覧のみ。更新は管理側で実施 */}
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-2">免許証ステータス</label>
+                        {(() => {
+                          const st = typeof (localProfile as any).driver_license === 'object'
+                            ? ((localProfile as any).driver_license?.status || 'pending')
+                            : 'pending';
+                          const label = st === 'verified' ? '認証済み' : st === 'rejected' ? '却下' : '審査中';
+                          return (
+                            <input
+                              type="text"
+                              disabled
+                              value={label}
+                              className="w-full px-4 py-3 border border-white/20 rounded-lg bg-white/10 text-white/80"
+                            />
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -488,7 +635,7 @@ const ProfilePage: NextPage = () => {
                     <label className="block text-sm font-medium text-white/90 mb-2">住所</label>
                     {isEditing ? (
                       <textarea
-                        value={currentProfile.address || ''}
+                        value={localProfile.address ?? ''}
                         onChange={(e) => handleProfileUpdate('address', e.target.value)}
                         rows={3}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -514,7 +661,7 @@ const ProfilePage: NextPage = () => {
                       {isEditing ? (
                         <input
                           type="text"
-                          value={currentProfile.emergency_contact || ''}
+                          value={localProfile.emergency_contact ?? ''}
                           onChange={(e) => handleProfileUpdate('emergency_contact', e.target.value)}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         />
@@ -528,7 +675,7 @@ const ProfilePage: NextPage = () => {
                       {isEditing ? (
                         <input
                           type="tel"
-                          value={currentProfile.emergency_phone || ''}
+                          value={localProfile.emergency_phone ?? ''}
                           onChange={(e) => handleProfileUpdate('emergency_phone', e.target.value)}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         />
@@ -541,30 +688,12 @@ const ProfilePage: NextPage = () => {
 
                 {/* 統計情報 */}
                 <div className="glass rounded-xl p-6 mt-8">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-white flex items-center">
-                      <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      利用統計
-                    </h3>
-                    <button
-                      onClick={async () => {
-                        if (updateUserStats) {
-                          try {
-                            await updateUserStats();
-                            alert('統計情報を更新しました。');
-                          } catch (error) {
-                            console.error('統計情報更新エラー:', error);
-                            alert('統計情報の更新に失敗しました。');
-                          }
-                        }
-                      }}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 text-sm"
-                    >
-                      更新
-                    </button>
-                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    利用統計
+                  </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div className="text-center glass rounded-lg p-4">
                       <div className="text-3xl font-bold text-blue-600 mb-1">{Number(currentProfile.total_bookings) || 0}</div>
@@ -711,11 +840,17 @@ const ProfilePage: NextPage = () => {
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <svg className={`w-5 h-5 mr-3 ${currentProfile.license_number ? 'text-green-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={currentProfile.license_number ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" : "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"} />
+                        <svg className={`w-5 h-5 mr-3 ${((currentProfile as any).driver_license?.status === 'verified') ? 'text-green-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={((currentProfile as any).driver_license?.status === 'verified') ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" : "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"} />
                         </svg>
-                        <span className={currentProfile.license_number ? 'text-green-300' : 'text-white/70'}>
-                          有効な運転免許証 {currentProfile.license_number ? '✓' : '(未登録)'}
+                        <span className={((currentProfile as any).driver_license?.status === 'verified') ? 'text-green-300' : 'text-white/70'}>
+                          有効な運転免許証 {
+                            ((currentProfile as any).driver_license?.status === 'verified')
+                              ? '✓'
+                              : ((currentProfile as any).driver_license?.status === 'pending')
+                                ? '(審査中)'
+                                : '(未登録)'
+                          }
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -727,10 +862,13 @@ const ProfilePage: NextPage = () => {
                     </div>
                     
                     <div className="mt-6">
-                      {currentProfile.is_verified && currentProfile.license_number ? (
-                        <button className="w-full bg-cyan-600 text-white py-3 px-4 rounded-md hover:bg-cyan-700 transition-colors duration-200 font-medium">
+                      {(currentProfile.is_verified && (currentProfile as any).driver_license?.status === 'verified') ? (
+                        <a
+                          href="/app/owner/vehicles/add"
+                          className="block w-full text-center bg-cyan-600 text-white py-3 px-4 rounded-md hover:bg-cyan-700 transition-colors duration-200 font-medium"
+                        >
                           オーナー登録を開始
-                        </button>
+                        </a>
                       ) : (
                         <div className="space-y-3">
                           {!currentProfile.is_verified && (
@@ -741,7 +879,7 @@ const ProfilePage: NextPage = () => {
                               本人確認を完了する
                             </a>
                           )}
-                          {!currentProfile.license_number && (
+                          {!((currentProfile as any).driver_license?.status === 'verified') && (
                             <button
                               onClick={() => setActiveTab('profile')}
                               className="block w-full bg-cyan-600 text-white py-3 px-4 rounded-md hover:bg-cyan-700 transition-colors duration-200 font-medium"
@@ -758,31 +896,220 @@ const ProfilePage: NextPage = () => {
             </div>
           )}
 
+          {/* 認証管理タブ */}
+          {activeTab === 'auth' && (
+            <div className="p-6">
+              <AuthStatusManager
+                userProfile={currentProfile}
+                onUpdateProfile={async (updates: any) => {
+                  if (!updateUserProfile) return;
+                  await updateUserProfile(updates);
+                }}
+              />
+            </div>
+          )}
+
+          {/* セキュリティタブ */}
+          {activeTab === 'security' && (
+            <div className="p-6">
+              <PersonalInfoSecurity />
+            </div>
+          )}
+
+
+
+
+
+
+
           {/* 設定タブ */}
           {activeTab === 'settings' && (
             <div className="p-6">
               <h2 className="text-xl font-semibold text-white mb-6">アカウント設定</h2>
               <div className="space-y-6">
-                <div className="glass rounded-lg p-4">
-                  <h3 className="font-semibold text-white mb-2">通知設定</h3>
-                  <div className="space-y-3">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
-                      <span className="ml-2 text-sm text-white/90">予約確認メール</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
-                      <span className="ml-2 text-sm text-white/90">プロモーションメール</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                      <span className="ml-2 text-sm text-white/90">SMS通知</span>
-                    </label>
+                {/* セキュリティ通知設定 */}
+                <div className="glass rounded-lg p-6">
+                  <h3 className="font-semibold text-white mb-4">セキュリティ通知</h3>
+                  <div className="space-y-4">
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-white mb-1">ログイン通知</h4>
+                          <p className="text-sm text-white/70">新しいデバイスからのログイン時に通知</p>
+                        </div>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/90">有効</span>
+                        </label>
+                      </div>
+                      <div className="flex space-x-6">
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">メール</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="ml-2 text-sm text-white/70">SMS</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">プッシュ通知</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-white mb-1">プロフィール変更通知</h4>
+                          <p className="text-sm text-white/70">個人情報やプロフィールの変更時に通知</p>
+                        </div>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/90">有効</span>
+                        </label>
+                      </div>
+                      <div className="flex space-x-6">
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">メール</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">SMS</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">プッシュ通知</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-white mb-1">セキュリティアラート</h4>
+                          <p className="text-sm text-white/70">不審なアクティビティや異常なアクセスを検知時に通知</p>
+                        </div>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/90">有効</span>
+                        </label>
+                      </div>
+                      <div className="flex space-x-6">
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">メール</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">SMS</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">プッシュ通知</span>
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="glass rounded-lg p-4">
-                  <h3 className="font-semibold text-white mb-2">プライバシー設定</h3>
+                {/* アカウント通知設定 */}
+                <div className="glass rounded-lg p-6">
+                  <h3 className="font-semibold text-white mb-4">アカウント通知</h3>
+                  <div className="space-y-4">
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-white mb-1">認証状況通知</h4>
+                          <p className="text-sm text-white/70">本人確認や書類審査の結果通知</p>
+                        </div>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/90">有効</span>
+                        </label>
+                      </div>
+                      <div className="flex space-x-6">
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">メール</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="ml-2 text-sm text-white/70">SMS</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">プッシュ通知</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* アクティビティ通知設定 */}
+                <div className="glass rounded-lg p-6">
+                  <h3 className="font-semibold text-white mb-4">アクティビティ通知</h3>
+                  <div className="space-y-4">
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-white mb-1">予約関連通知</h4>
+                          <p className="text-sm text-white/70">予約の確定、変更、キャンセル時の通知</p>
+                        </div>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/90">有効</span>
+                        </label>
+                      </div>
+                      <div className="flex space-x-6">
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">メール</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">SMS</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">プッシュ通知</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-white mb-1">決済通知</h4>
+                          <p className="text-sm text-white/70">支払い完了、返金、決済エラー時の通知</p>
+                        </div>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/90">有効</span>
+                        </label>
+                      </div>
+                      <div className="flex space-x-6">
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">メール</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="ml-2 text-sm text-white/70">SMS</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
+                          <span className="ml-2 text-sm text-white/70">プッシュ通知</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* プライバシー設定 */}
+                <div className="glass rounded-lg p-6">
+                  <h3 className="font-semibold text-white mb-4">プライバシー設定</h3>
                   <div className="space-y-3">
                     <label className="flex items-center">
                       <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" defaultChecked />
@@ -795,7 +1122,15 @@ const ProfilePage: NextPage = () => {
                   </div>
                 </div>
 
-                <div className="glass rounded-lg p-4 border border-red-500/30">
+                {/* 設定保存ボタン */}
+                <div className="flex justify-end">
+                  <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium">
+                    設定を保存
+                  </button>
+                </div>
+
+                {/* 危険な操作 */}
+                <div className="glass rounded-lg p-6 border border-red-500/30">
                   <h3 className="font-semibold text-red-300 mb-2">危険な操作</h3>
                   <p className="text-sm text-white/70 mb-4">
                     アカウントを削除すると、すべてのデータが永久に失われます。この操作は取り消せません。
@@ -818,9 +1153,16 @@ const ProfilePage: NextPage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="glass rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-white mb-4">アカウント削除の確認</h3>
-            <p className="text-white/70 mb-6">
+            <p className="text-white/70 mb-4">
               本当にアカウントを削除しますか？この操作は取り消せません。
             </p>
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+              <h4 className="text-blue-400 font-medium mb-2">⚠️ 重要な注意事項：</h4>
+              <p className="text-white/70 text-sm">
+                この操作はShareNestのアカウントデータのみを削除します。<br/>
+                <strong className="text-blue-300">Googleアカウント自体は削除されず、引き続きご利用いただけます。</strong>
+              </p>
+            </div>
             <div className="flex space-x-4">
               <button
                 onClick={() => setShowDeleteModal(false)}
@@ -829,10 +1171,22 @@ const ProfilePage: NextPage = () => {
                 キャンセル
               </button>
               <button
-                onClick={() => {
-                  // アカウント削除処理をここに実装
-                  setShowDeleteModal(false);
-                  alert('アカウント削除機能は未実装です。');
+                onClick={async () => {
+                  if (!deleteUserProfile) {
+                    toast.error('削除機能が利用できません。');
+                    return;
+                  }
+
+                  try {
+                    // ShareNestのプロフィールデータを削除
+                    await deleteUserProfile();
+                    
+                    setShowDeleteModal(false);
+                    toast.success('ShareNestのアカウントが削除されました。\n\n※ Googleアカウント自体は削除されていません。\nGoogleアカウントは引き続きご利用いただけます。');
+                  } catch (error) {
+                    console.error('アカウント削除エラー:', error);
+                    toast.error('アカウントの削除に失敗しました。もう一度お試しください。');
+                  }
                 }}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
               >

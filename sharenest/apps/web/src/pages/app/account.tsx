@@ -43,7 +43,7 @@ type BookingHistory = {
 
 const AccountPage: NextPage = () => {
   const router = useRouter();
-  const { user, userProfile, updateUserProfile, signOut } = useAuth();
+  const { user, userProfile, updateUserProfile, signOut, deleteUserProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'security' | 'preferences' | 'danger'>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -88,11 +88,25 @@ const AccountPage: NextPage = () => {
       setLocalProfile(userProfile);
     }
   }, [userProfile]);
+
+  // デバッグ用: isEditingの状態変化を監視
+  useEffect(() => {
+    console.log('isEditingの状態が変更されました:', isEditing);
+  }, [isEditing]);
   
   // 現在のプロフィール（認証されたプロフィールまたはローカル状態）
   const currentProfile = userProfile || localProfile;
 
   // アバター変更処理
+  // アイコン変更ボタンクリック時のチェック
+  const handleAvatarButtonClick = () => {
+    if (!userProfile) {
+      alert('プロフィールがまだ作成されていません。\n\nアイコンを変更するには、まずプロフィールの作成を完了してください。\n\n「Google情報で作成」ボタンからプロフィールを作成できます。');
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
@@ -116,25 +130,13 @@ const AccountPage: NextPage = () => {
       // ローカル状態を更新
       setLocalProfile(prev => ({ ...prev, avatar: avatarUrl }));
       
-      // データベースのアバターのみを更新（プロフィール全体ではなく）
-      if (updateUserProfile && userProfile) {
+      // データベースのアバターを更新
+      if (updateUserProfile) {
         await updateUserProfile({ avatar: avatarUrl });
-      } else if (!userProfile) {
-        console.log('⚠️ プロフィールが未作成のため、アバターURLのみローカルに保存');
-        // プロフィールが作成されるまで待機してから再試行
-        setTimeout(async () => {
-          if (userProfile && updateUserProfile) {
-            try {
-              await updateUserProfile({ avatar: avatarUrl });
-              console.log('✅ 遅延アバター更新完了');
-            } catch (retryError) {
-              console.error('❌ 遅延アバター更新エラー:', retryError);
-            }
-          }
-        }, 2000);
+        alert('アバターが更新されました。');
+      } else {
+        alert('アバターの更新に失敗しました。もう一度お試しください。');
       }
-      
-      alert('アバターが更新されました。');
     } catch (error) {
       console.error('アバターアップロードエラー:', error);
       alert('アバターのアップロードに失敗しました。');
@@ -147,6 +149,12 @@ const AccountPage: NextPage = () => {
   const handleRemoveAvatar = async () => {
     if (!user) return;
     
+    // プロフィール未作成チェック
+    if (!userProfile) {
+      alert('プロフィールがまだ作成されていません。\n\nアイコンを削除するには、まずプロフィールの作成を完了してください。\n\n「Google情報で作成」ボタンからプロフィールを作成できます。');
+      return;
+    }
+    
     setIsUploading(true);
     
     try {
@@ -157,14 +165,13 @@ const AccountPage: NextPage = () => {
       setAvatarPreview(null);
       setLocalProfile(prev => ({ ...prev, avatar: '' }));
       
-      // データベースのアバターのみをクリア
-      if (updateUserProfile && userProfile) {
+      // データベースのアバターをクリア
+      if (updateUserProfile) {
         await updateUserProfile({ avatar: '' });
-      } else if (!userProfile) {
-        console.log('⚠️ プロフィールが未作成のため、アバター削除はローカルのみ');
+        alert('アバターが削除されました。');
+      } else {
+        alert('アバターの削除に失敗しました。もう一度お試しください。');
       }
-      
-      alert('アバターが削除されました。');
     } catch (error) {
       console.error('アバター削除エラー:', error);
       alert('アバターの削除に失敗しました。');
@@ -173,9 +180,70 @@ const AccountPage: NextPage = () => {
     }
   };
 
-  // プロフィール更新処理
+  // バリデーション関数
+  const validateField = (field: string, value: string): string | null => {
+    switch (field) {
+      case 'name':
+        if (!value.trim()) return '名前は必須です';
+        if (value.length < 2) return '名前は2文字以上で入力してください';
+        return null;
+      case 'phone':
+        if (value && !/^[0-9-+()\s]+$/.test(value)) return '有効な電話番号を入力してください';
+        return null;
+      case 'birth_date':
+        if (value) {
+          const birthDate = new Date(value);
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+          if (age < 18) return '18歳以上である必要があります';
+          if (age > 100) return '有効な生年月日を入力してください';
+        }
+        return null;
+      case 'license_expiry':
+        if (value) {
+          const expiryDate = new Date(value);
+          const today = new Date();
+          if (expiryDate < today) return '免許証の有効期限が切れています';
+        }
+        return null;
+      case 'emergency_phone':
+        if (value && !/^[0-9-+()\s]+$/.test(value)) return '有効な電話番号を入力してください';
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  // プロフィール更新処理（バリデーション付き）
   const handleProfileUpdate = (field: string, value: string) => {
-    setLocalProfile(prev => ({ ...prev, [field]: value }));
+    console.log('handleProfileUpdate呼び出し:', field, value);
+    // まず値を更新してから、必要に応じてバリデーションエラーを表示
+    setLocalProfile(prev => {
+      console.log('localProfile更新前:', prev);
+      const updated = { ...prev, [field]: value };
+      console.log('localProfile更新後:', updated);
+      return updated;
+    });
+    
+    // バリデーションエラーがある場合は警告を表示（ただし入力は阻止しない）
+    const error = validateField(field, value);
+    if (error && value.trim() !== '') {
+      // 空文字の場合はエラーを表示しない（入力中の可能性があるため）
+      console.warn(`バリデーションエラー (${field}): ${error}`);
+    }
+  };
+
+  // JSONBフィールド用の更新処理
+  const handleAddressUpdate = (addressData: any) => {
+    setLocalProfile(prev => ({ ...prev, address: addressData }));
+  };
+
+  const handleEmergencyContactUpdate = (contactData: any) => {
+    setLocalProfile(prev => ({ ...prev, emergency_contact: contactData }));
+  };
+
+  const handleDriverLicenseUpdate = (licenseData: any) => {
+    setLocalProfile(prev => ({ ...prev, driver_license: licenseData }));
   };
 
   // プロフィール保存処理
@@ -184,6 +252,47 @@ const AccountPage: NextPage = () => {
       if (!userProfile) {
         alert('プロフィールが作成されていません。しばらく待ってから再試行してください。');
       }
+      return;
+    }
+    
+    // 保存前のバリデーション
+    const validationErrors: string[] = [];
+    
+    if (!localProfile.name?.trim()) {
+      validationErrors.push('名前は必須です');
+    } else if (localProfile.name.length < 2) {
+      validationErrors.push('名前は2文字以上で入力してください');
+    }
+    
+    if (localProfile.phone && !/^[0-9-+()\s]+$/.test(localProfile.phone)) {
+      validationErrors.push('有効な電話番号を入力してください');
+    }
+    
+    if (localProfile.birth_date) {
+      const birthDate = new Date(localProfile.birth_date);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      if (age < 18) {
+        validationErrors.push('18歳以上である必要があります');
+      } else if (age > 100) {
+        validationErrors.push('有効な生年月日を入力してください');
+      }
+    }
+    
+    if (localProfile.license_expiry) {
+      const expiryDate = new Date(localProfile.license_expiry);
+      const today = new Date();
+      if (expiryDate < today) {
+        validationErrors.push('免許証の有効期限が切れています');
+      }
+    }
+    
+    if (localProfile.emergency_phone && !/^[0-9-+()\s]+$/.test(localProfile.emergency_phone)) {
+      validationErrors.push('緊急連絡先の電話番号が無効です');
+    }
+    
+    if (validationErrors.length > 0) {
+      alert('以下のエラーを修正してください:\n\n' + validationErrors.join('\n'));
       return;
     }
     
@@ -196,6 +305,9 @@ const AccountPage: NextPage = () => {
         avatar: localProfile.avatar,
         license_number: localProfile.license_number,
         license_expiry: localProfile.license_expiry,
+        ...(typeof (localProfile as any).driver_license === 'object' && (localProfile as any).driver_license
+          ? { driver_license: (localProfile as any).driver_license }
+          : {}),
         address: localProfile.address,
         birth_date: localProfile.birth_date,
         emergency_contact: localProfile.emergency_contact,
@@ -242,20 +354,24 @@ const AccountPage: NextPage = () => {
 
   // アカウント削除処理
   const handleDeleteAccount = async () => {
-    if (!confirm('本当にアカウントを削除しますか？この操作は取り消せません。')) {
+    if (!deleteUserProfile) {
+      alert('削除機能が利用できません。');
       return;
     }
 
     setIsLoading(true);
     
     try {
-      // アカウント削除処理
-      await signOut();
+      // ShareNestのプロフィールデータを削除
+      await deleteUserProfile();
+      
+      // ホームページにリダイレクト
       router.push('/');
-      alert('アカウントが削除されました。');
+      
+      alert('ShareNestのアカウントが削除されました。\n\n※ Googleアカウント自体は削除されていません。\nGoogleアカウントは引き続きご利用いただけます。');
     } catch (error) {
       console.error('アカウント削除エラー:', error);
-      alert('アカウントの削除に失敗しました。');
+      alert('アカウントの削除に失敗しました。もう一度お試しください。');
     } finally {
       setIsLoading(false);
       setShowDeleteModal(false);
@@ -340,7 +456,7 @@ const AccountPage: NextPage = () => {
                 </div>
                 <div className="flex flex-col space-y-2">
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={handleAvatarButtonClick}
                     disabled={isUploading}
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                       isUploading 
@@ -408,7 +524,16 @@ const AccountPage: NextPage = () => {
                         <p className="text-white/70 mt-1">個人情報と認証状況の管理</p>
                       </div>
                       <button
-                        onClick={() => isEditing ? handleSaveProfile() : setIsEditing(true)}
+                        onClick={() => {
+                          console.log('編集ボタンクリック - 現在のisEditing:', isEditing);
+                          if (isEditing) {
+                            console.log('保存処理を実行');
+                            handleSaveProfile();
+                          } else {
+                            console.log('編集モードに切り替え');
+                            setIsEditing(true);
+                          }
+                        }}
                         disabled={isLoading}
                         className={`px-6 py-3 text-sm font-medium rounded-lg shadow-sm transition-all duration-200 ${
                           isLoading 
@@ -432,7 +557,10 @@ const AccountPage: NextPage = () => {
                           <input
                             type="text"
                             value={localProfile.name || ''}
-                            onChange={(e) => handleProfileUpdate('name', e.target.value)}
+                            onChange={(e) => {
+                              console.log('氏名フィールド変更:', e.target.value, 'isEditing:', isEditing);
+                              handleProfileUpdate('name', e.target.value);
+                            }}
                             disabled={!isEditing}
                             className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50"
                             placeholder="氏名を入力"
@@ -462,16 +590,68 @@ const AccountPage: NextPage = () => {
                           />
                         </div>
 
+                        {/* 住所情報（構造化） */}
                         <div>
-                          <label className="block text-sm font-medium text-white/70 mb-2">住所</label>
-                          <textarea
-                            value={localProfile.address || ''}
-                            onChange={(e) => handleProfileUpdate('address', e.target.value)}
-                            disabled={!isEditing}
-                            rows={3}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50"
-                            placeholder="住所を入力"
-                          />
+                          <label className="block text-sm font-medium text-white/70 mb-2">住所情報</label>
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <input
+                                type="text"
+                                value={typeof localProfile.address === 'object' ? localProfile.address?.postal_code || '' : ''}
+                                onChange={(e) => {
+                                  const currentAddress = typeof localProfile.address === 'object' ? localProfile.address : {};
+                                  handleAddressUpdate({ ...currentAddress, postal_code: e.target.value });
+                                }}
+                                disabled={!isEditing}
+                                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                                placeholder="郵便番号"
+                              />
+                              <input
+                                type="text"
+                                value={typeof localProfile.address === 'object' ? localProfile.address?.prefecture || '' : ''}
+                                onChange={(e) => {
+                                  const currentAddress = typeof localProfile.address === 'object' ? localProfile.address : {};
+                                  handleAddressUpdate({ ...currentAddress, prefecture: e.target.value });
+                                }}
+                                disabled={!isEditing}
+                                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                                placeholder="都道府県"
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={typeof localProfile.address === 'object' ? localProfile.address?.city || '' : ''}
+                              onChange={(e) => {
+                                const currentAddress = typeof localProfile.address === 'object' ? localProfile.address : {};
+                                handleAddressUpdate({ ...currentAddress, city: e.target.value });
+                              }}
+                              disabled={!isEditing}
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                              placeholder="市区町村"
+                            />
+                            <input
+                              type="text"
+                              value={typeof localProfile.address === 'object' ? localProfile.address?.street || '' : ''}
+                              onChange={(e) => {
+                                const currentAddress = typeof localProfile.address === 'object' ? localProfile.address : {};
+                                handleAddressUpdate({ ...currentAddress, street: e.target.value });
+                              }}
+                              disabled={!isEditing}
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                              placeholder="番地・建物名"
+                            />
+                            {/* 従来の文字列形式との互換性 */}
+                            {typeof localProfile.address === 'string' && localProfile.address && (
+                              <textarea
+                                value={localProfile.address}
+                                onChange={(e) => handleProfileUpdate('address', e.target.value)}
+                                disabled={!isEditing}
+                                rows={2}
+                                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                                placeholder="従来の住所形式"
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -479,51 +659,124 @@ const AccountPage: NextPage = () => {
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-white mb-4">運転免許・緊急連絡先</h3>
                         
+                        {/* 運転免許証情報（構造化） */}
                         <div>
-                          <label className="block text-sm font-medium text-white/70 mb-2">運転免許証番号</label>
-                          <input
-                            type="text"
-                            value={localProfile.license_number || ''}
-                            onChange={(e) => handleProfileUpdate('license_number', e.target.value)}
-                            disabled={!isEditing}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50"
-                            placeholder="免許証番号を入力"
-                          />
+                          <label className="block text-sm font-medium text-white/70 mb-2">運転免許証情報</label>
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              value={typeof localProfile.driver_license === 'object' ? localProfile.driver_license?.license_no || '' : localProfile.license_number || ''}
+                              onChange={(e) => {
+                                if (typeof localProfile.driver_license === 'object') {
+                                  const currentLicense = localProfile.driver_license || {};
+                                  handleDriverLicenseUpdate({ ...currentLicense, license_no: e.target.value });
+                                } else {
+                                  handleProfileUpdate('license_number', e.target.value);
+                                }
+                              }}
+                              disabled={(typeof localProfile.driver_license === 'object' && localProfile.driver_license?.status === 'verified') ? true : !isEditing}
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                              placeholder="運転免許証番号"
+                            />
+                            <input
+                              type="date"
+                              value={typeof localProfile.driver_license === 'object' ? localProfile.driver_license?.expiry_date || '' : localProfile.license_expiry || ''}
+                              onChange={(e) => {
+                                if (typeof localProfile.driver_license === 'object') {
+                                  const currentLicense = localProfile.driver_license || {};
+                                  handleDriverLicenseUpdate({ ...currentLicense, expiry_date: e.target.value });
+                                } else {
+                                  handleProfileUpdate('license_expiry', e.target.value);
+                                }
+                              }}
+                              disabled={(typeof localProfile.driver_license === 'object' && localProfile.driver_license?.status === 'verified') ? true : !isEditing}
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                            />
+                            <select
+                              value={typeof localProfile.driver_license === 'object' ? localProfile.driver_license?.status || 'valid' : 'valid'}
+                              onChange={(e) => {
+                                const currentLicense = typeof localProfile.driver_license === 'object' ? localProfile.driver_license : {};
+                                handleDriverLicenseUpdate({ ...currentLicense, status: e.target.value });
+                              }}
+                              disabled={!isEditing}
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                            >
+                              <option value="valid">有効</option>
+                              <option value="expired">期限切れ</option>
+                              <option value="suspended">停止中</option>
+                              <option value="revoked">取消</option>
+                            </select>
+                            {/* 従来の文字列形式との互換性表示 */}
+                            {localProfile.license_number && typeof localProfile.driver_license !== 'object' && (
+                              <div className="text-white/50 text-xs">
+                                免許証番号: {localProfile.license_number}
+                              </div>
+                            )}
+                            {localProfile.license_expiry && typeof localProfile.driver_license !== 'object' && (
+                              <div className="text-white/50 text-xs">
+                                有効期限: {localProfile.license_expiry}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
+                        {/* 緊急連絡先情報（構造化） */}
                         <div>
-                          <label className="block text-sm font-medium text-white/70 mb-2">免許証有効期限</label>
-                          <input
-                            type="date"
-                            value={localProfile.license_expiry || ''}
-                            onChange={(e) => handleProfileUpdate('license_expiry', e.target.value)}
-                            disabled={!isEditing}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-white/70 mb-2">緊急連絡先（氏名）</label>
-                          <input
-                            type="text"
-                            value={localProfile.emergency_contact || ''}
-                            onChange={(e) => handleProfileUpdate('emergency_contact', e.target.value)}
-                            disabled={!isEditing}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50"
-                            placeholder="緊急連絡先の氏名を入力"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-white/70 mb-2">緊急連絡先（電話番号）</label>
-                          <input
-                            type="tel"
-                            value={localProfile.emergency_phone || ''}
-                            onChange={(e) => handleProfileUpdate('emergency_phone', e.target.value)}
-                            disabled={!isEditing}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50"
-                            placeholder="緊急連絡先の電話番号を入力"
-                          />
+                          <label className="block text-sm font-medium text-white/70 mb-2">緊急連絡先情報</label>
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              value={typeof localProfile.emergency_contact === 'object' ? localProfile.emergency_contact?.name || '' : localProfile.emergency_contact || ''}
+                              onChange={(e) => {
+                                if (typeof localProfile.emergency_contact === 'object') {
+                                  const currentContact = localProfile.emergency_contact || {};
+                                  handleEmergencyContactUpdate({ ...currentContact, name: e.target.value });
+                                } else {
+                                  handleProfileUpdate('emergency_contact', e.target.value);
+                                }
+                              }}
+                              disabled={!isEditing}
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                              placeholder="緊急連絡先の氏名"
+                            />
+                            <input
+                              type="tel"
+                              value={typeof localProfile.emergency_contact === 'object' ? localProfile.emergency_contact?.phone || '' : localProfile.emergency_phone || ''}
+                              onChange={(e) => {
+                                if (typeof localProfile.emergency_contact === 'object') {
+                                  const currentContact = localProfile.emergency_contact || {};
+                                  handleEmergencyContactUpdate({ ...currentContact, phone: e.target.value });
+                                } else {
+                                  handleProfileUpdate('emergency_phone', e.target.value);
+                                }
+                              }}
+                              disabled={!isEditing}
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                              placeholder="緊急連絡先の電話番号"
+                            />
+                            <input
+                              type="text"
+                              value={typeof localProfile.emergency_contact === 'object' ? localProfile.emergency_contact?.relationship || '' : ''}
+                              onChange={(e) => {
+                                const currentContact = typeof localProfile.emergency_contact === 'object' ? localProfile.emergency_contact : {};
+                                handleEmergencyContactUpdate({ ...currentContact, relationship: e.target.value });
+                              }}
+                              disabled={!isEditing}
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent disabled:opacity-50 text-sm"
+                              placeholder="続柄（例：配偶者、親、兄弟など）"
+                            />
+                            {/* 従来の文字列形式との互換性表示 */}
+                            {typeof localProfile.emergency_contact === 'string' && localProfile.emergency_contact && (
+                              <div className="text-white/50 text-xs">
+                                従来形式: {localProfile.emergency_contact}
+                              </div>
+                            )}
+                            {localProfile.emergency_phone && typeof localProfile.emergency_contact !== 'object' && (
+                              <div className="text-white/50 text-xs">
+                                電話番号: {localProfile.emergency_phone}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -836,7 +1089,7 @@ const AccountPage: NextPage = () => {
               <p className="text-white/70 mb-4">
                 本当にアカウントを削除しますか？この操作は取り消すことができません。
               </p>
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
                 <h4 className="text-red-400 font-medium mb-2">削除されるデータ：</h4>
                 <ul className="text-white/70 text-sm space-y-1">
                   <li>• プロフィール情報</li>
@@ -844,6 +1097,13 @@ const AccountPage: NextPage = () => {
                   <li>• 設定情報</li>
                   <li>• すべての個人データ</li>
                 </ul>
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <h4 className="text-blue-400 font-medium mb-2">⚠️ 重要な注意事項：</h4>
+                <p className="text-white/70 text-sm">
+                  この操作はShareNestのアカウントデータのみを削除します。<br/>
+                  <strong className="text-blue-300">Googleアカウント自体は削除されず、引き続きご利用いただけます。</strong>
+                </p>
               </div>
             </div>
 

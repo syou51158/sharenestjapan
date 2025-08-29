@@ -9,6 +9,7 @@ import { PageTransition } from '../components/PageTransition';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -50,6 +51,8 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta name="theme-color" content="#000000" />
       </Head>
       <DefaultSeo {...defaultSEO} />
+      {/* グローバルトースト */}
+      <Toaster position="top-right" />
       <PageTransition>
         {isAppRoute && !isAuthPage ? (
           <ProtectedRoute>

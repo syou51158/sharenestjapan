@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AdminHeader from '../components/AdminHeader';
 
 export default function AdminBookingsPage() {
   // 実際はAPIから取得
@@ -25,30 +26,7 @@ export default function AdminBookingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      {/* ヘッダー */}
-      <div className="glass border-b border-white/10">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">🏢</span>
-              </div>
-              <h1 className="text-2xl font-black gradient-text-blue">ShareNest 管理</h1>
-            </div>
-            <nav className="flex space-x-6">
-              <Link href="/" className="text-white/70 hover:text-white px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300">
-                📊 ダッシュボード
-              </Link>
-              <Link href="/bookings" className="glass px-4 py-2 rounded-xl text-cyan-300 font-semibold hover:bg-white/20 transition-all duration-300">
-                📅 予約管理
-              </Link>
-              <Link href="/vehicles" className="text-white/70 hover:text-white px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300">
-                🚗 車両管理
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </div>
+      <AdminHeader active="bookings" />
 
       <main className="container mx-auto px-4 py-12">
         {/* ページタイトル */}
@@ -128,6 +106,9 @@ export default function AdminBookingsPage() {
     </div>
   );
 }
+
+
+
 
 
 

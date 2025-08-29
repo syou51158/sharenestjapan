@@ -5,6 +5,28 @@ import type { User } from '@supabase/supabase-js';
 type UserRole = 'admin' | 'owner' | 'user';
 type KYCStatus = 'pending' | 'approved' | 'rejected';
 
+// JSONBフィールドの型定義
+type AddressInfo = {
+  postal_code?: string;
+  prefecture?: string;
+  city?: string;
+  street?: string;
+  building?: string;
+};
+
+type EmergencyContactInfo = {
+  name?: string;
+  phone?: string;
+  relationship?: string;
+};
+
+type DriverLicenseInfo = {
+  license_no?: string;
+  status?: 'pending' | 'verified' | 'rejected';
+  expiry_date?: string;
+  issued_date?: string;
+};
+
 type UserProfile = {
   id: string;
   email: string;
@@ -18,10 +40,11 @@ type UserProfile = {
   // Additional profile fields (optional to match DB columns and UI usage)
   license_number?: string;
   license_expiry?: string;
-  address?: string;
+  address?: string | AddressInfo; // 文字列またはJSONB構造
   birth_date?: string;
-  emergency_contact?: string;
+  emergency_contact?: string | EmergencyContactInfo; // 文字列またはJSONB構造
   emergency_phone?: string;
+  driver_license?: DriverLicenseInfo; // JSONB構造
   is_owner?: boolean;
   member_since?: string;
   total_bookings?: number;
@@ -48,6 +71,11 @@ type AuthContextType = {
   refreshUserProfile: () => Promise<void>;
   updateUserStats: () => Promise<void>;
   hasPermission: (requiredRole: UserRole) => boolean;
+  // 追加
+  profileLoading: boolean;
+  profileError: string | null;
+  createProfile: (input?: { name?: string; email?: string }) => Promise<void>;
+  deleteUserProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -57,6 +85,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  // 追加: プロフィールのローディング/エラー、作成中フラグ
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const supabase = getSupabase();
 
   useEffect(() => {
@@ -167,6 +199,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      setProfileLoading(true);
+      setProfileError(null);
       console.log('📋 ユーザープロフィール取得開始:', userId);
       const { data, error } = await supabase
         .schema('sharenest')
@@ -180,11 +214,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if ((error as any).code === 'PGRST116') {
           console.log('🆕 プロフィールが存在しないため作成します');
-          if (user) {
+          if (user && !isCreatingProfile) {
             try {
+              setIsCreatingProfile(true);
               await createUserProfile(user);
-            } catch (createError) {
+            } catch (createError: any) {
               console.error('❌ プロフィール作成エラー:', createError);
+              setProfileError(createError?.message || 'プロフィール作成に失敗しました');
+            } finally {
+              setIsCreatingProfile(false);
             }
           }
           return;
@@ -218,10 +256,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       setUserProfile(data as any);
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ プロフィール取得エラー:', err);
+      setProfileError(err?.message || 'プロフィール取得に失敗しました');
       // エラー時もプロフィールをnullにして続行
       setUserProfile(null);
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -275,6 +316,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     try {
+      setProfileLoading(true);
+      setProfileError(null);
       console.log('🆕 新規ユーザープロフィール作成:', user.id);
       
       const timeoutPromise = new Promise((_, reject) => 
@@ -312,9 +355,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('✅ プロフィール作成成功');
       setUserProfile(data);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ プロフィール作成エラー:', err);
+      setProfileError(err?.message || 'プロフィール作成に失敗しました');
       // 失敗時はnullのまま（UI側で再試行/エラー表示）
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -339,20 +385,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
     if (!user || !userProfile) throw new Error('User not authenticated');
+    setProfileLoading(true);
+    setProfileError(null);
+    
+    // JSONBフィールドの処理
+    const processedUpdates = { ...updates } as Record<string, any>;
+
+    // 日付/日付時刻フィールドの空文字をnullへ正規化（DBでdate/ timestamptzの空文字はエラーになるため）
+    const dateLikeFields = [
+      'license_expiry',
+      'birth_date',
+      'member_since',
+      'created_at',
+      'updated_at',
+      // JSONB内の日付はここでは対象外（driver_license.expiry_dateなどはJSONBとして扱う）
+    ];
+    for (const field of dateLikeFields) {
+      if (processedUpdates[field] === '') {
+        processedUpdates[field] = null;
+      }
+    }
+    
+    // addressフィールドの処理
+    if (updates.address !== undefined) {
+      if (typeof updates.address === 'object' && updates.address !== null) {
+        // AddressInfo型の場合はJSONBとして保存
+        processedUpdates.address = updates.address as any;
+      } else {
+        // 文字列の場合はそのまま保存（後方互換性）
+        processedUpdates.address = updates.address;
+      }
+    }
+    
+    // emergency_contactフィールドの処理
+    if (updates.emergency_contact !== undefined) {
+      if (typeof updates.emergency_contact === 'object' && updates.emergency_contact !== null) {
+        // EmergencyContactInfo型の場合はJSONBとして保存
+        processedUpdates.emergency_contact = updates.emergency_contact as any;
+      } else {
+        // 文字列の場合はそのまま保存（後方互換性）
+        processedUpdates.emergency_contact = updates.emergency_contact;
+      }
+    }
+    
+    // driver_licenseフィールドの処理
+    if (updates.driver_license !== undefined) {
+      processedUpdates.driver_license = updates.driver_license as any;
+    }
     
     const { error } = await supabase
       .schema('sharenest')
       .from('users')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...processedUpdates, updated_at: new Date().toISOString() })
       .eq('id', user.id);
     
-    if (error) throw error;
+    if (error) {
+      setProfileLoading(false);
+      setProfileError((error as any)?.message || 'プロフィール更新に失敗しました');
+      throw error;
+    }
     
     setUserProfile(prev => prev ? { ...prev, ...updates } : null);
+    setProfileLoading(false);
   };
 
   const refreshUserProfile = async () => {
     if (!user) return;
+    setProfileLoading(true);
+    setProfileError(null);
     await fetchUserProfile(user.id);
   };
 
@@ -432,6 +532,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 追加: 明示的にプロフィール作成をトリガーするAPI（UIから呼び出し可能）
+  const createProfile = async (input?: { name?: string; email?: string }) => {
+    if (!user) throw new Error('User not authenticated');
+    if (isCreatingProfile) return; // 二重起動防止
+    setIsCreatingProfile(true);
+    setProfileError(null);
+    try {
+      await createUserProfile(user, input?.name, input?.email);
+    } catch (err: any) {
+      setProfileError(err?.message || 'プロフィール作成に失敗しました');
+      throw err;
+    } finally {
+      setIsCreatingProfile(false);
+    }
+  };
+
+  const deleteUserProfile = async () => {
+    if (!user || !userProfile) throw new Error('User not authenticated');
+    setProfileLoading(true);
+    setProfileError(null);
+    
+    try {
+      console.log('🗑️ アカウント完全削除処理開始:', user.id);
+      
+      // サーバーサイドAPIを呼び出してユーザーアカウントを完全削除
+      const response = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error('❌ サーバーサイド削除エラー:', result);
+        throw new Error(result.error || 'アカウント削除に失敗しました');
+      }
+      
+      console.log('✅ サーバーサイド削除成功:', result.message);
+      
+      // ローカル状態をクリア
+      setUserProfile(null);
+      setUser(null);
+      setAccessToken(null);
+      
+      console.log('🎉 アカウント完全削除処理完了');
+      
+    } catch (err: any) {
+      console.error('❌ アカウント削除処理エラー:', err);
+      setProfileError(err?.message || 'アカウント削除に失敗しました');
+      throw err;
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   const hasPermission = (requiredRole: UserRole): boolean => {
     if (!userProfile) return false;
     
@@ -464,7 +622,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateUserProfile,
       refreshUserProfile,
       updateUserStats,
-      hasPermission
+      hasPermission,
+      // 追加
+      profileLoading,
+      profileError,
+      createProfile,
+      deleteUserProfile
     }}>
       {children}
     </AuthContext.Provider>

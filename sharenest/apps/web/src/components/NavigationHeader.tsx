@@ -13,7 +13,8 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { user, userProfile, signOut, loading, isAdmin, isOwner } = useAuth();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { user, userProfile, signOut, loading, isAdmin, isOwner, updateUserProfile } = useAuth();
 
 
 
@@ -32,6 +33,40 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
       router.push('/');
     } catch (error) {
       console.error('ログアウトエラー:', error);
+    }
+  };
+
+  const handleSyncGoogleProfile = async () => {
+    try {
+      if (isSyncing) return;
+      if (!user) {
+        alert('ログインが必要です。');
+        return;
+      }
+      const meta: any = user.user_metadata || {};
+      const googleName: string = meta.full_name || meta.name || '';
+      const googleAvatar: string = meta.avatar_url || '';
+
+      if (!googleName && !googleAvatar) {
+        alert('Googleアカウントのプロフィール情報が見つかりませんでした。');
+        return;
+      }
+
+      const confirmed = confirm('Googleアカウントからお名前とプロフィール画像を入力しますか？');
+      if (!confirmed) return;
+
+      setIsSyncing(true);
+      await updateUserProfile({
+        name: googleName || userProfile?.name || user.email || '',
+        avatar: googleAvatar || ''
+      });
+      setIsSyncing(false);
+      setIsUserMenuOpen(false);
+      alert('プロフィールを更新しました。');
+    } catch (err: any) {
+      console.error('プロフィール同期エラー:', err);
+      setIsSyncing(false);
+      alert(`プロフィールの更新に失敗しました。${err?.message ? '\\n' + err.message : ''}`);
     }
   };
 
@@ -207,6 +242,17 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
                         アカウント管理
                       </Link>
                       
+                      {!userProfile && (
+                        <button
+                          type="button"
+                          onClick={handleSyncGoogleProfile}
+                          disabled={isSyncing}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${isSyncing ? 'text-white/50' : 'text-white hover:bg-slate-700/50'}`}
+                        >
+                          {isSyncing ? 'Google情報で更新中…' : 'Googleアカウント情報を反映'}
+                        </button>
+                      )}
+                      
                       {isOwner && (
                         <Link
                           href="/app/owner/dashboard"
@@ -355,6 +401,20 @@ export const NavigationHeader = ({ showBack = false, backUrl, title }: Navigatio
                     >
                       アカウント管理
                     </Link>
+
+                    {!userProfile && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await handleSyncGoogleProfile();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        disabled={isSyncing}
+                        className={`block w-full px-4 py-2 text-left rounded-lg transition-colors duration-200 ${isSyncing ? 'text-white/50' : 'text-white/80 hover:text-white hover:bg-slate-800/50'}`}
+                      >
+                        {isSyncing ? 'Google情報で更新中…' : 'Googleアカウント情報を反映'}
+                      </button>
+                    )}
                     
                     {isOwner && (
                       <Link

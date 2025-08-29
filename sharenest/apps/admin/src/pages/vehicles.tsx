@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import VehicleForm from '../components/VehicleForm';
+import AdminHeader from '../components/AdminHeader';
 
 interface Vehicle {
   id: string;
@@ -50,17 +51,14 @@ export default function AdminVehiclesPage() {
   // 車両を削除
   const deleteVehicle = async (id: string) => {
     if (!confirm('この車両を削除しますか？')) return;
-    
     try {
       const response = await fetch(`/api/vehicles/${id}`, {
         method: 'DELETE',
       });
-      
       if (!response.ok) {
         throw new Error('車両の削除に失敗しました');
       }
-      
-      await fetchVehicles(); // データを再取得
+      await fetchVehicles();
     } catch (err) {
       alert(err instanceof Error ? err.message : '削除に失敗しました');
     }
@@ -98,30 +96,7 @@ export default function AdminVehiclesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      {/* ヘッダー */}
-      <div className="glass border-b border-white/10">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">🏢</span>
-              </div>
-              <h1 className="text-2xl font-black gradient-text-blue">ShareNest 管理</h1>
-            </div>
-            <nav className="flex space-x-6">
-              <Link href="/" className="text-white/70 hover:text-white px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300">
-                📊 ダッシュボード
-              </Link>
-              <Link href="/bookings" className="text-white/70 hover:text-white px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300">
-                📅 予約管理
-              </Link>
-              <Link href="/vehicles" className="glass px-4 py-2 rounded-xl text-cyan-300 font-semibold hover:bg-white/20 transition-all duration-300">
-                🚗 車両管理
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </div>
+      <AdminHeader active="vehicles" />
 
       <main className="container mx-auto px-4 py-12">
         {/* ページタイトル */}
@@ -175,7 +150,6 @@ export default function AdminVehiclesPage() {
           </button>
         </div>
 
-        {/* ローディング状態 */}
         {loading && (
           <div className="text-center py-20">
             <div className="text-4xl mb-4">🔄</div>
@@ -183,7 +157,6 @@ export default function AdminVehiclesPage() {
           </div>
         )}
 
-        {/* エラー状態 */}
         {error && (
           <div className="text-center py-20">
             <div className="text-4xl mb-4">❌</div>
@@ -197,7 +170,6 @@ export default function AdminVehiclesPage() {
           </div>
         )}
 
-        {/* 車両カード */}
         {!loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {vehicles.map((vehicle) => (
@@ -256,7 +228,6 @@ export default function AdminVehiclesPage() {
           </div>
         )}
 
-        {/* 空の状態 */}
         {!loading && !error && vehicles.length === 0 && (
           <div className="text-center py-20">
             <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-3xl flex items-center justify-center text-4xl">
@@ -273,7 +244,6 @@ export default function AdminVehiclesPage() {
           </div>
         )}
 
-        {/* 車両追加・編集フォーム */}
         {(showAddForm || editingVehicle) && (
           <VehicleForm 
             vehicle={editingVehicle}

@@ -1,9 +1,10 @@
 # ShareNest プロジェクトルール
-
-## ポート使用ルール
+勝手に物事を進めない　修正する場合は都度確認する
+## ポート使用ルール　
+-ポートは必ず4000で　使われてると思いがちであるが　そのまま開いてもよい
 - **Webアプリケーション**: ポート4000 (`http://localhost:4000`)
 - **管理者ページ**: ポート4001 (`http://localhost:4001`)
-- **モバイルアプリ**: ポート4002（必要に応じて）
+-
 
 ### Supabase 接続設定
 - **組織**: Trend Company株式会社
@@ -11,3 +12,4 @@
 - **スキーマ**: ShareNest（`sharenest`）
 - **プロジェクトID**: `fzfnjtuuxmxpngzwaueo`
 
+MCPはsupabase (supabase cotoka)は絶対使うな
