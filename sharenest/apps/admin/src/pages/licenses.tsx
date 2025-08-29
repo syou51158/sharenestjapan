@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Head from 'next/head';
 import AdminHeader from '../components/AdminHeader';
 
@@ -16,6 +16,7 @@ export default function LicenseReviewPage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'pending' | 'verified' | 'rejected' | 'all'>('pending');
   const [q, setQ] = useState('');
+  const debounceRef = useRef<NodeJS.Timeout>();
 
   const fetchRows = async () => {
     setLoading(true);
@@ -55,7 +56,25 @@ export default function LicenseReviewPage() {
     }
   };
 
-  useEffect(() => { fetchRows(); }, []);
+  useEffect(() => {
+    // ステータス変更時は即座に実行
+    fetchRows();
+  }, [status]);
+
+  useEffect(() => {
+    // 検索文字列変更時はデバウンス処理
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      fetchRows();
+    }, 500);
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [q]);
 
   useEffect(() => {
     // セッションがない場合はログインへ誘導
@@ -77,14 +96,21 @@ export default function LicenseReviewPage() {
         <h1 className="text-2xl font-bold text-white mb-6">免許審査</h1>
 
         <div className="glass rounded-xl p-4 mb-4 flex items-center gap-3">
-          <select value={status} onChange={(e) => setStatus(e.target.value as any)} className="px-3 py-2 rounded bg-white/10 text-white">
-            <option value="pending">審査中</option>
-            <option value="verified">承認済み</option>
-            <option value="rejected">却下</option>
-            <option value="all">すべて</option>
-          </select>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="メール/名前検索" className="px-3 py-2 rounded bg-white/10 text-white flex-1" />
-          <button onClick={fetchRows} disabled={loading} className="px-4 py-2 bg-cyan-600 text-white rounded">{loading ? '読込中' : '再読込'}</button>
+          <div className="relative group">
+            <select value={status} onChange={(e) => setStatus(e.target.value as any)} className="px-3 py-2 rounded bg-slate-800 text-white border border-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-cyan-500/20 appearance-none cursor-pointer pr-8">
+              <option value="pending" className="bg-slate-800 text-white">審査中</option>
+              <option value="verified" className="bg-slate-800 text-white">承認済み</option>
+              <option value="rejected" className="bg-slate-800 text-white">却下</option>
+              <option value="all" className="bg-slate-800 text-white">すべて</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <svg className="w-4 h-4 text-gray-400 group-hover:text-cyan-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="メール/名前検索" className="px-3 py-2 rounded bg-slate-800/80 text-white border border-slate-600 hover:bg-slate-700/90 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-cyan-500/20 flex-1" />
+          <button onClick={fetchRows} disabled={loading} className="px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-500 disabled:opacity-50 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-cyan-500/20">{loading ? '検索中...' : '検索'}</button>
         </div>
 
         <div className="glass rounded-xl overflow-hidden">
