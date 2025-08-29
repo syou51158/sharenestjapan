@@ -12,6 +12,11 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   i18n,
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
   // ページ遷移時のローディング問題を解決するための設定
   experimental: {
     optimizeCss: false,
