@@ -129,8 +129,8 @@ export default function LicenseReviewPage() {
                 <tr key={r.id} className="border-t border-white/10 text-white/90">
                   <td className="p-3">{r.name || '-'}</td>
                   <td className="p-3">{r.email}</td>
-                  <td className="p-3">{(r.driver_license as any)?.license_no || r['license_number'] || '-'}</td>
-                  <td className="p-3">{(r.driver_license as any)?.status || '-'}</td>
+                  <td className="p-3">{r.driver_license?.license_no || '-'}</td>
+                  <td className="p-3">{r.driver_license?.status || '-'}</td>
                   <td className="p-3 space-x-2">
                     <button onClick={() => action(r.id, 'approve')} className="px-3 py-1 bg-green-600 text-white rounded">承認</button>
                     <button onClick={() => action(r.id, 'reject')} className="px-3 py-1 bg-red-600 text-white rounded">却下</button>
