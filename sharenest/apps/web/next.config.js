@@ -12,13 +12,14 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   i18n,
-  output: 'export',
-  trailingSlash: true,
-  images: {
-    unoptimized: true,
-  },
-  basePath: process.env.NODE_ENV === 'production' ? '/sharenestjapan' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/sharenestjapan/' : '',
+  // GitHub Pages用の設定（本番環境のみ）
+  ...(process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES === 'true' ? {
+    output: 'export',
+    trailingSlash: true,
+    images: {
+      unoptimized: true,
+    },
+  } : {}),
   // ページ遷移時のローディング問題を解決するための設定
   experimental: {
     optimizeCss: false,
