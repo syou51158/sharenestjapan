@@ -1,0 +1,10 @@
+node_modules
+.next
+Dockerfile
+.git
+.gitignore
+dist
+npm-debug.log
+yarn.lock
+.env*
+# ci trigger: Cloud Run deploy (admin) - 2025-09-04T00:00:00Z
