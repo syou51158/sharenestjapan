@@ -1,0 +1,75 @@
+name: Create/Describe Cloud Run Domain Mapping
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Target service (web or admin)"
+        required: true
+        default: "web"
+        type: choice
+        options:
+          - web
+          - admin
+      domain:
+        description: "Custom domain to map (e.g. app.example.com)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: sharenestjapan
+  REGION: asia-northeast1
+
+jobs:
+  map-domain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Resolve service name
+        id: resolve
+        run: |
+          if [ "${{ inputs.service }}" = "web" ]; then
+            echo "service_name=sharenest-web" >> $GITHUB_OUTPUT
+          else
+            echo "service_name=sharenest-admin" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create domain mapping (idempotent)
+        continue-on-error: true
+        run: |
+          gcloud run domain-mappings create \
+            --project=${{ env.PROJECT_ID }} \
+            --region=${{ env.REGION }} \
+            --service=${{ steps.resolve.outputs.service_name }} \
+            --domain='${{ inputs.domain }}'
+
+      - name: Describe domain mapping and show DNS records
+        run: |
+          echo "==== Domain Mapping Status ===="
+          gcloud run domain-mappings describe '${{ inputs.domain }}' \
+            --project=${{ env.PROJECT_ID }} \
+            --region=${{ env.REGION }} \
+            --format='yaml'
+          echo "\n==== DNS Records to add (copy to Lolipop DNS) ===="
+          gcloud run domain-mappings describe '${{ inputs.domain }}' \
+            --project=${{ env.PROJECT_ID }} \
+            --region=${{ env.REGION }} \
+            --format='value(resourceRecords)' | sed 's/,/\n/g' || true
