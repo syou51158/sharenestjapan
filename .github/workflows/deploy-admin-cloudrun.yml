@@ -1,18 +1,18 @@
-name: Deploy Web (Cloud Run)
+﻿name: Deploy Admin (Cloud Run)
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'apps/web/**'
-      - 'packages/**'
-      - 'pnpm-workspace.yaml'
-      - 'pnpm-lock.yaml'
-      - 'package.json'
+      - 'sharenest/apps/admin/**'
+      - 'sharenest/packages/**'
+      - 'sharenest/pnpm-workspace.yaml'
+      - 'sharenest/pnpm-lock.yaml'
+      - 'sharenest/package.json'
   workflow_dispatch:
 
 concurrency:
-  group: web-deploy-${{ github.ref }}
+  group: admin-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -23,10 +23,10 @@ env:
   PROJECT_ID: sharenestjapan
   REGION: asia-northeast1
   REPOSITORY: sharenestjapan
-  SERVICE_NAME: sharenest-web
-  IMAGE_NAME: web
+  SERVICE_NAME: sharenest-admin
+  IMAGE_NAME: admin
   REGISTRY_HOST: asia-northeast1-docker.pkg.dev
-  IMAGE_URI: asia-northeast1-docker.pkg.dev/sharenestjapan/sharenestjapan/web
+  IMAGE_URI: asia-northeast1-docker.pkg.dev/sharenestjapan/sharenestjapan/admin
 
 jobs:
   build-and-deploy:
@@ -38,7 +38,6 @@ jobs:
       - name: Authenticate to Google Cloud (WIF)
         uses: google-github-actions/auth@v2
         with:
-          # 例) projects/828069558990/locations/global/workloadIdentityPools/github-actions/providers/github
           workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           project_id: ${{ env.PROJECT_ID }}
@@ -52,16 +51,15 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.REGISTRY_HOST }} --quiet
 
-      - name: Build Docker image (web)
+      - name: Build Docker image (admin)
         run: |
           docker build \
-            -f apps/web/Dockerfile \
+            -f sharenest/apps/admin/Dockerfile \
             -t ${{ env.IMAGE_URI }}:${{ github.sha }} \
             -t ${{ env.IMAGE_URI }}:latest \
             --build-arg NEXT_PUBLIC_SUPABASE_URL='${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}' \
             --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY='${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}' \
-            --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY='${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}' \
-            --build-arg NEXT_PUBLIC_SITE_URL='${{ secrets.SITE_URL }}' \
+            --build-arg NEXT_PUBLIC_SITE_URL='${{ secrets.ADMIN_SITE_URL }}' \
             .
 
       - name: Push Docker image
@@ -69,7 +67,7 @@ jobs:
           docker push ${{ env.IMAGE_URI }}:${{ github.sha }}
           docker push ${{ env.IMAGE_URI }}:latest
 
-      - name: Deploy to Cloud Run (web)
+      - name: Deploy to Cloud Run (admin)
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --project=${{ env.PROJECT_ID }} \
@@ -81,7 +79,7 @@ jobs:
             --concurrency=80 \
             --min-instances=0 \
             --memory=512Mi \
-            --set-env-vars=NODE_ENV=production,NEXT_PUBLIC_SUPABASE_URL='${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}',NEXT_PUBLIC_SUPABASE_ANON_KEY='${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}',NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY='${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}',NEXT_PUBLIC_SITE_URL='${{ secrets.SITE_URL }}',SITE_URL='${{ secrets.SITE_URL }}'
+            --set-env-vars=NODE_ENV=production,NEXT_PUBLIC_SUPABASE_URL='${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}',NEXT_PUBLIC_SUPABASE_ANON_KEY='${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}',NEXT_PUBLIC_SITE_URL='${{ secrets.ADMIN_SITE_URL }}',SITE_URL='${{ secrets.ADMIN_SITE_URL }}'
 
       - name: Show service URL
         run: |
