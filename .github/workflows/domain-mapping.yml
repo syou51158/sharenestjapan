@@ -31,12 +31,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required secrets for WIF
+        run: |
+          if [ -z "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}" ] || [ -z "${{ secrets.GCP_SERVICE_ACCOUNT }}" ]; then
+            echo "WORKLOAD_IDENTITY_PROVIDER and/or GCP_SERVICE_ACCOUNT are not set. Configure GitHub Secrets for WIF." >&2
+            echo "If this workflow is triggered from a fork/Dependabot, secrets are not available by default." >&2
+            exit 1
+          fi
+
       - name: Authenticate to Google Cloud (WIF)
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          project_id: ${{ env.PROJECT_ID }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2

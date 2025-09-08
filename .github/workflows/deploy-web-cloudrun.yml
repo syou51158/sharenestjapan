@@ -35,13 +35,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required secrets for WIF
+        run: |
+          if [ -z "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}" ] || [ -z "${{ secrets.GCP_SERVICE_ACCOUNT }}" ]; then
+            echo "WORKLOAD_IDENTITY_PROVIDER and/or GCP_SERVICE_ACCOUNT are not set. Configure GitHub Secrets for WIF." >&2
+            echo "If this workflow is triggered from a fork/Dependabot, secrets are not available by default." >&2
+            exit 1
+          fi
+
       - name: Authenticate to Google Cloud (WIF)
         uses: google-github-actions/auth@v2
         with:
           # 萓・ projects/828069558990/locations/global/workloadIdentityPools/github-actions/providers/github
           workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          project_id: ${{ env.PROJECT_ID }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -54,7 +61,14 @@ jobs:
 
       - name: Build Docker image (web)
         run: |
-          
+          docker build \
+            -f sharenest/apps/web/Dockerfile \
+            -t ${{ env.IMAGE_URI }}:${{ github.sha }} \
+            -t ${{ env.IMAGE_URI }}:latest \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL='${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}' \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY='${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}' \
+            --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY='${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}' \
+            --build-arg NEXT_PUBLIC_SITE_URL='${{ secrets.SITE_URL }}' \
             sharenest
 
       - name: Push Docker image
