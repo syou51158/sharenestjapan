@@ -11,6 +11,7 @@ const withPWA = require('next-pwa')({
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  transpilePackages: ["@sharenest/ui", "@sharenest/api"],
   i18n,
   // GitHub Pages用の設定（本番環境のみ）
   ...(process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES === 'true' ? {
