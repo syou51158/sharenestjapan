@@ -1,4 +1,5 @@
 import type { NextPage } from 'next';
+import { buildUrl } from '../../lib/site';
 import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
@@ -351,7 +352,7 @@ function CheckoutForm({ vehicleId, hours, distanceKm }: { vehicleId: string; hou
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       clientSecret,
-      confirmParams: { return_url: window.location.origin + '/app/bookings' },
+      confirmParams: { return_url: buildUrl('/app/bookings') },
       redirect: 'if_required',
     });
     
@@ -409,6 +410,9 @@ function CheckoutForm({ vehicleId, hours, distanceKm }: { vehicleId: string; hou
 }
 
 export default CheckoutPage;
+
+
+
 
 
 

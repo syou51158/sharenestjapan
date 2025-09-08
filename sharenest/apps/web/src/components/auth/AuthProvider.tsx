@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { getSupabase } from '../../lib/supabase';
+import { buildUrl } from '../../lib/site';
 import type { User } from '@supabase/supabase-js';
 
 type UserRole = 'admin' | 'owner' | 'user';
@@ -273,7 +274,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     console.log('🔐 Googleログイン開始');
-    console.log('🌐 リダイレクトURL:', `${window.location.origin}/app/vehicles`);
+    const redirectToUrl = buildUrl('/app/vehicles');
+    console.log('🌐 リダイレクトURL:', redirectToUrl);
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -281,7 +283,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         queryParams: {
           prompt: 'select_account'
         },
-        redirectTo: `${window.location.origin}/app/vehicles`
+        redirectTo: redirectToUrl
       }
     });
     
@@ -296,7 +298,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, name: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password, 
+      options: {
+        emailRedirectTo: buildUrl('/app/login')
+      }
+    });
     if (error) throw error;
     if (data.user) {
       await createUserProfile(data.user, name, email);

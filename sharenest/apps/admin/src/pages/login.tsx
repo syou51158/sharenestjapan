@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { supabaseBrowser } from '../lib/supabase-browser';
+import { buildUrl } from '../lib/site';
 import AdminHeader from '../components/AdminHeader';
 
 export default function LoginPage() {
@@ -18,7 +19,7 @@ export default function LoginPage() {
   const signInWithGoogle = async () => {
     setLoading(true);
     setError(null);
-    const redirectTo = `${window.location.origin}/licenses`;
+    const redirectTo = buildUrl('/licenses');
     const { error } = await supabaseBrowser.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
     if (error) setError(error.message);
     setLoading(false);

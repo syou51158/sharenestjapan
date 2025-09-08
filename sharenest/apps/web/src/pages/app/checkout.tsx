@@ -8,6 +8,7 @@ import { getSbSchema } from '../../lib/supabase';
 import { NavigationHeader } from '../../components/NavigationHeader';
 import { useAuth } from '../../components/auth/AuthProvider';
 import { Footer } from '../../components/layout/Footer';
+import { buildUrl } from '../../lib/site';
 
 interface Vehicle {
   id: string;
@@ -412,7 +413,7 @@ function CheckoutForm({ vehicleId, hours, distanceKm }: { vehicleId: string; hou
       const result = await stripe.confirmPayment({
         elements,
         clientSecret,
-        confirmParams: { return_url: window.location.origin + '/app/bookings' },
+        confirmParams: { return_url: buildUrl('/app/bookings') },
         redirect: 'if_required',
       });
       error = (result as any).error;
