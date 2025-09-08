@@ -1,16 +1,19 @@
 ﻿name: Deploy to GitHub Pages
 
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
 # Run all steps from sharenest/ subdir
 defaults:
   run:
     working-directory: sharenest
-
-on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build-and-deploy:

@@ -27,8 +27,8 @@ COPY packages ./packages
 # Install all deps including devDependencies for build
 RUN pnpm install --frozen-lockfile --prod=false
 
-# Build internal workspace packages required by admin without turbo
-RUN pnpm -w --filter @sharenest/ui build && pnpm -w --filter @sharenest/api build
+# Build internal workspace packages required by admin without turbo (ensure db first)
+RUN pnpm -w --filter @sharenest/db build && pnpm -w --filter @sharenest/api build && pnpm -w --filter @sharenest/ui build
 
 # Build admin app
 WORKDIR /app/apps/admin
