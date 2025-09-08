@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { supabaseBrowser } from '../lib/supabase-browser';
 
 export default function AdminHeader({ active }: { active?: 'dashboard' | 'bookings' | 'vehicles' | 'licenses' }) {
   const base = 'text-white/70 hover:text-white px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300';
   const activeCls = 'glass px-4 py-2 rounded-xl text-cyan-300 font-semibold hover:bg-white/20 transition-all duration-300';
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   useEffect(() => {
-    supabaseBrowser.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data } = supabaseBrowser.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
-    return () => { data.subscription.unsubscribe(); };
+    supabaseBrowser.auth
+      .getUser()
+      .then(({ data }: { data: { user: User | null } }) => setUser(data.user));
+    const { data: authListener } = supabaseBrowser.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    return () => { authListener.subscription.unsubscribe(); };
   }, []);
 
   return (
