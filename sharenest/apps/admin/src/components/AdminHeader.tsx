@@ -16,7 +16,9 @@ export default function AdminHeader({ active }: { active?: 'dashboard' | 'bookin
     supabaseBrowser.auth
       .getUser()
       .then(({ data }: { data: { user: SupabaseUser | null } }) => setUser(data.user));
-    const { data: authListener } = supabaseBrowser.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    const { data: authListener } = supabaseBrowser.auth.onAuthStateChange(
+      (_e: unknown, session: { user: SupabaseUser | null } | null) => setUser(session?.user ?? null)
+    );
     return () => { authListener.subscription.unsubscribe(); };
   }, []);
 
