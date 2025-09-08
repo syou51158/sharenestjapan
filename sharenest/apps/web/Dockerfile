@@ -26,9 +26,11 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps ./apps
 COPY packages ./packages
 
-# Install all deps including devDependencies for build, then build workspace
+# Install all deps including devDependencies for build
 RUN pnpm install --frozen-lockfile --prod=false
-RUN pnpm build
+
+# Build internal workspace packages required by web without turbo
+RUN pnpm -w --filter @sharenest/ui build && pnpm -w --filter @sharenest/api build
 
 # Build the web app
 WORKDIR /app/apps/web

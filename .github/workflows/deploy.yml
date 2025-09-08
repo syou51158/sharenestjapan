@@ -1,4 +1,12 @@
-﻿name: Deploy to GitHub Pages\n\n# Run all steps from sharenest/ subdir\ndefaults:\n  run:\n    working-directory: sharenest\n\n
+﻿name: Deploy to GitHub Pages
+
+# Run all steps from sharenest/ subdir
+defaults:
+  run:
+    working-directory: sharenest
+
+on:
+  workflow_dispatch:
   push:
     branches: [ main ]
   pull_request:
