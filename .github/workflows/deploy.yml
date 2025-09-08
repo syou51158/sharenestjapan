@@ -29,10 +29,10 @@ jobs:
         node-version: '18'
         cache: 'pnpm'
     
-    - name: Enable pnpm via Corepack
-      run: |
-        corepack enable
-        corepack prepare pnpm@8.15.4 --activate
+    - name: Setup pnpm (action)
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8.15.4
         
     - name: Install dependencies
       run: pnpm install
