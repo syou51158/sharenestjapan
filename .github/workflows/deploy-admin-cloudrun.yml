@@ -22,11 +22,11 @@ permissions:
 env:
   PROJECT_ID: sharenestjapan
   REGION: asia-northeast1
-  REPOSITORY: sharenestjapan
+  REPOSITORY: sharenestjapan-docker
   SERVICE_NAME: sharenest-admin
   IMAGE_NAME: admin
   REGISTRY_HOST: asia-northeast1-docker.pkg.dev
-  IMAGE_URI: asia-northeast1-docker.pkg.dev/sharenestjapan/sharenestjapan/admin
+  IMAGE_URI: asia-northeast1-docker.pkg.dev/sharenestjapan/sharenestjapan-docker/admin
 
 jobs:
   build-and-deploy:
