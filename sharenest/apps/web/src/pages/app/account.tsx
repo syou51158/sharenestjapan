@@ -7,6 +7,13 @@ import { useAuth } from '../../components/auth/AuthProvider';
 import { NavigationHeader } from '../../components/NavigationHeader';
 import { Footer } from '../../components/layout/Footer';
 
+type AddressInfo = {
+  postal_code?: string;
+  prefecture?: string;
+  city?: string;
+  street?: string;
+};
+
 type UserProfile = {
   id: string;
   name: string;
@@ -15,7 +22,7 @@ type UserProfile = {
   avatar: string;
   license_number: string;
   license_expiry: string;
-  address: string;
+  address: string | AddressInfo;
   birth_date: string;
   emergency_contact: string;
   emergency_phone: string;

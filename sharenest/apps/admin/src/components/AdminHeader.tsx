@@ -1,16 +1,21 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import type { User } from '@supabase/supabase-js';
+// 依存解決: 型のみの import は失敗を避けるため存在チェックに弱い
+type SupabaseUser = {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, any>;
+};
 import { supabaseBrowser } from '../lib/supabase-browser';
 
 export default function AdminHeader({ active }: { active?: 'dashboard' | 'bookings' | 'vehicles' | 'licenses' }) {
   const base = 'text-white/70 hover:text-white px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300';
   const activeCls = 'glass px-4 py-2 rounded-xl text-cyan-300 font-semibold hover:bg-white/20 transition-all duration-300';
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   useEffect(() => {
     supabaseBrowser.auth
       .getUser()
-      .then(({ data }: { data: { user: User | null } }) => setUser(data.user));
+      .then(({ data }: { data: { user: SupabaseUser | null } }) => setUser(data.user));
     const { data: authListener } = supabaseBrowser.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
     return () => { authListener.subscription.unsubscribe(); };
   }, []);
