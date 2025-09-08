@@ -61,12 +61,13 @@ export default function CheckinPage() {
         >
           チェックイン完了
         </button>
-</div>
       </div>
       <Footer />
     </div>
   );
 }
+
+
 
 
 

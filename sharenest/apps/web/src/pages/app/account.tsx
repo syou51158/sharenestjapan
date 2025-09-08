@@ -1135,10 +1135,8 @@ const AccountPage: NextPage = () => {
             </div>
           </div>
         </div>
-      </div>
-      
       <Footer />
-    </div>
+    </>
   );
 };
 
