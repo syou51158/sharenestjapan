@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Enable pnpm via Corepack
 RUN corepack enable && corepack prepare pnpm@8.15.4 --activate && npm i -g pnpm@8.15.4
+RUN pnpm -v && which pnpm && node -v && npm -v
 
 # Build-time (public) args for Next.js client bundle
 ARG NEXT_PUBLIC_SUPABASE_URL
