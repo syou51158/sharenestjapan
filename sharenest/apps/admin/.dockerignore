@@ -9,3 +9,5 @@ yarn.lock
 .env*
 # ci trigger: Cloud Run deploy (admin) - 2025-09-04T00:00:00Z
 # ci: trigger deploy 2025-09-08T18:20:44.5064075+09:00
+
+# ci: retrigger 2025-09-08T18:28:02.1171120+09:00
