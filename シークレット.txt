@@ -1,0 +1,16 @@
+Name:WORKLOAD_IDENTITY_PROVIDER
+Value:projects/828069558990/locations/global/workloadIdentityPools/github-actions/providers/github
+Name:GCP_SERVICE_ACCOUNT
+Value:github-deployer-cloudrun@sharenestjapan.iam.gserviceaccount.com
+Name:GCP_PROJECT_ID
+Value:sharenestjapan
+Name:GCP_REGION
+Value:asia-northeast1
+Name:NEXT_PUBLIC_SUPABASE_URL
+Value:https://fzfnjtuuxmxpngzwaueo.supabase.co
+Name:NEXT_PUBLIC_SUPABASE_ANON_KEY
+Value:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6Zm5qdHV1eG14cG5nendhdWVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0MTgxMTcsImV4cCI6MjA3MDk5NDExN30.7g7hvPHgMvt3RtYmTWdgkGejWcicH2R9gzRUzclhJpo
+Name:SITE_URL
+Value:https://app.sharenestjapan.site
+Name:ADMIN_SITE_URL
+Value:https://admin.sharenestjapan.site

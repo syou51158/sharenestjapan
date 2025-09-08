@@ -12,4 +12,4 @@
 - **スキーマ**: ShareNest（`sharenest`）
 - **プロジェクトID**: `fzfnjtuuxmxpngzwaueo`
 
-MCPはsupabase (supabase cotoka)は絶対使うな
+MCPはsupabaseをつかえ

@@ -36,9 +36,6 @@ importers:
       '@sharenest/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@supabase/supabase-js':
-        specifier: ^2.39.0
-        version: 2.56.0
       i18next:
         specifier: ^22.0.0
         version: 22.5.1
