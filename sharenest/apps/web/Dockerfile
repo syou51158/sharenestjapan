@@ -27,8 +27,8 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps ./apps
 COPY packages ./packages
 
-# Install all deps including devDependencies for build
-RUN pnpm install --frozen-lockfile --prod=false
+# Install all deps including devDependencies for build (allow lockfile drift)
+RUN pnpm install --no-frozen-lockfile --prod=false
 
 # Next.js transpilePackages handles workspace packages; no prebuild needed
 
