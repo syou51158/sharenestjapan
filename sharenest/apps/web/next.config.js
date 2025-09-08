@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const { i18n } = require('./next-i18next.config');
+const isPagesExport = process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES === 'true';
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
@@ -16,15 +17,12 @@ const nextConfig = {
     // CI でのビルド失敗を防ぐため、Lint はビルド時に無視（別ジョブ/ローカルで対応）
     ignoreDuringBuilds: true,
   },
-  i18n,
-  // GitHub Pages用の設定（本番環境のみ）
-  ...(process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES === 'true' ? {
+  // GitHub Pages 用の静的出力では i18n は使用不可（Next の制約）
+  ...(isPagesExport ? {
     output: 'export',
     trailingSlash: true,
-    images: {
-      unoptimized: true,
-    },
-  } : {}),
+    images: { unoptimized: true },
+  } : { i18n }),
   // ページ遷移時のローディング問題を解決するための設定
   experimental: {
     optimizeCss: false,
