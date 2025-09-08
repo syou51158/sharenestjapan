@@ -37,7 +37,7 @@ jobs:
       run: pnpm install
       
     - name: Build web application
-      run: pnpm build --filter=@sharenest/web
+      run: pnpm -r --filter @sharenest/web build
       env:
         NODE_ENV: production
         GITHUB_PAGES: true
