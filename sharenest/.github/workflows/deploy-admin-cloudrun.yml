@@ -32,6 +32,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Preflight check (secrets/vars)
+        run: |
+          set -euo pipefail
+          echo "Checking required secrets/vars presence (values are masked)..."
+          [ -n "${GCP_WORKLOAD_IDENTITY_PROVIDER:-}" ] || { echo "::error::Missing secret GCP_WORKLOAD_IDENTITY_PROVIDER"; exit 1; }
+          [ -n "${GCP_SERVICE_ACCOUNT_EMAIL:-}" ] || { echo "::error::Missing secret GCP_SERVICE_ACCOUNT_EMAIL"; exit 1; }
+          [ -n "${REGION:-}" ] || { echo "::error::Missing repository variable GCP_REGION"; exit 1; }
+          [ -n "${PROJECT_ID:-}" ] || { echo "::error::Missing repository variable GCP_PROJECT_ID"; exit 1; }
+          [ -n "${AR_REPOSITORY:-}" ] || { echo "::error::Missing repository variable GCP_AR_REPOSITORY"; exit 1; }
+          [ -n "${SERVICE:-}" ] || { echo "::error::Missing repository variable CLOUD_RUN_SERVICE_ADMIN"; exit 1; }
+        env:
+          GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          REGION: ${{ env.REGION }}
+          PROJECT_ID: ${{ env.PROJECT_ID }}
+          AR_REPOSITORY: ${{ env.AR_REPOSITORY }}
+          SERVICE: ${{ env.SERVICE }}
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
