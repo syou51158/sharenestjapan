@@ -38,12 +38,15 @@ jobs:
         run: |
           set -euo pipefail
           echo "Checking required secrets/vars presence (values are masked)..."
-          [ -n "${GCP_WORKLOAD_IDENTITY_PROVIDER:-}" ] || { echo "::error::Missing secret GCP_WORKLOAD_IDENTITY_PROVIDER"; exit 1; }
-          [ -n "${GCP_SERVICE_ACCOUNT_EMAIL:-}" ] || { echo "::error::Missing secret GCP_SERVICE_ACCOUNT_EMAIL"; exit 1; }
-          [ -n "${REGION:-}" ] || { echo "::error::Missing repository variable GCP_REGION"; exit 1; }
-          [ -n "${PROJECT_ID:-}" ] || { echo "::error::Missing repository variable GCP_PROJECT_ID"; exit 1; }
-          [ -n "${AR_REPOSITORY:-}" ] || { echo "::error::Missing repository variable GCP_AR_REPOSITORY"; exit 1; }
-          [ -n "${SERVICE:-}" ] || { echo "::error::Missing repository variable CLOUD_RUN_SERVICE_WEB"; exit 1; }
+          err=0
+          check() { if [ -z "$(printf "%s" "${!1:-}" | tr -d '[:space:]')" ]; then echo "::error::Missing $2"; err=1; fi; }
+          check GCP_WORKLOAD_IDENTITY_PROVIDER "secret GCP_WORKLOAD_IDENTITY_PROVIDER"
+          check GCP_SERVICE_ACCOUNT_EMAIL "secret GCP_SERVICE_ACCOUNT_EMAIL"
+          check REGION "repository variable GCP_REGION"
+          check PROJECT_ID "repository variable GCP_PROJECT_ID"
+          check AR_REPOSITORY "repository variable GCP_AR_REPOSITORY"
+          check SERVICE "repository variable CLOUD_RUN_SERVICE_WEB"
+          if [ "$err" -ne 0 ]; then exit 1; fi
         env:
           GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
