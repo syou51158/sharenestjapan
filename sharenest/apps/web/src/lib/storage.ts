@@ -58,12 +58,13 @@ export async function uploadAvatar(file: File, userId: string): Promise<string> 
   
   if (error) {
     console.error('❌ アバターアップロードエラー:', error);
+    const anyErr = error as unknown as { message?: string; statusCode?: number; error?: unknown };
     console.error('❌ エラー詳細:', {
-      message: error.message,
-      statusCode: error.statusCode,
-      error: error.error
+      message: anyErr?.message ?? 'unknown',
+      statusCode: anyErr?.statusCode ?? null,
+      error: anyErr?.error ?? null,
     });
-    throw new Error(`アバターのアップロードに失敗しました: ${error.message}`);
+    throw new Error(`アバターのアップロードに失敗しました: ${anyErr?.message ?? 'unknown'}`);
   }
   
   console.log('✅ アバターアップロード成功:', data);

@@ -33,15 +33,17 @@ const nextConfig = {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
   },
-  async redirects() {
-    return [
-      {
-        source: '/find-car',
-        destination: '/app/vehicles',
-        permanent: true,
-      },
-    ];
-  },
+  ...(isPagesExport ? {} : {
+    async redirects() {
+      return [
+        {
+          source: '/find-car',
+          destination: '/app/vehicles',
+          permanent: true,
+        },
+      ];
+    },
+  }),
   webpack: (config, { isServer }) => {
     // ページ遷移時のパフォーマンス最適化
     config.optimization = {
