@@ -24,8 +24,11 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps ./apps
 COPY packages ./packages
 
-# Install deps and build admin app
-RUN pnpm install --frozen-lockfile
+# Install all deps including devDependencies for build, then build workspace
+RUN pnpm install --frozen-lockfile --prod=false
+RUN pnpm build
+
+# Build admin app
 WORKDIR /app/apps/admin
 RUN pnpm build
 
